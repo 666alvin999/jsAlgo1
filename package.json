@@ -3,7 +3,12 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "start": "clear && bun run ./src/index.ts"
+    "start": "bun run ./src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "dev:backend": "bun --watch src/backend/index.ts",
+    "dev:frontend": "bun --watch src/frontend/index.ts",
+    "start:backend": "bun run src/backend/index.ts",
+    "build:front": "bun build --minify src/frontend/index.ts --outdir=target/js"
   },
   "devDependencies": {
     "bun-types": "latest"
