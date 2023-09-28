@@ -1,9 +1,9 @@
 {
   "name": "jsalgo1",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "start": "clear && bun run index.ts"
+    "start": "clear && bun run ./src/index.ts"
   },
   "devDependencies": {
     "bun-types": "latest"
