@@ -4,11 +4,11 @@
   "type": "module",
   "scripts": {
     "start": "bun run ./src/index.ts",
+    "start:backend": "bun run src/backend/index.ts 3000",
     "dev": "bun --watch src/index.ts",
-    "dev:backend": "bun --watch src/backend/index.ts",
+    "dev:backend": "bun --watch src/backend/index.ts 3000",
     "dev:frontend": "bun --watch src/frontend/index.ts",
-    "start:backend": "bun run src/backend/index.ts",
-    "build:front": "bun build --minify src/frontend/index.ts --outdir=target/js"
+    "build:frontend": "bun build --minify src/frontend/index.ts --outdir=target/js"
   },
   "devDependencies": {
     "bun-types": "latest"

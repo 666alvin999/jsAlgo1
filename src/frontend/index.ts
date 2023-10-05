@@ -1,5 +1,8 @@
-const logCustom = (text: string) => {
-    console.log(text + 10990);
-}
+/// <reference lib="dom" />
 
-logCustom("hello");
+import webClientStarter from "./webSocketStarter.ts";
+import {drawGrid} from "./canvas.ts";
+
+webClientStarter();
+
+drawGrid();
