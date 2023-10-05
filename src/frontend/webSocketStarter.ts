@@ -6,8 +6,6 @@ const webClientStarter = () => {
     };
 
     wsClient.onmessage = (event: MessageEvent) => {
-        console.log(event.data);
-
         if (event.data === "reload") {
             location.reload();
         }
