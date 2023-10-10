@@ -37,7 +37,10 @@ window.addEventListener("keypress", (event: KeyboardEvent) => {
         && keyNumber !== 0
     ) {
         for (let i: number = 0; i < 9; i++) {
-            if (i < Math.floor(mousePosX / 3) * 3 || i >= ((Math.floor(mousePosX / 3) * 3) + 3)) {
+            if (i !== mousePosX || i !== mousePosY) {
+                changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
+                changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
+
                 changeCellDomains(i, mousePosY, keyNumber);
                 changeCellDomains(mousePosX, i, keyNumber);
             }
@@ -45,7 +48,8 @@ window.addEventListener("keypress", (event: KeyboardEvent) => {
 
         for (let k: number = Math.floor(mousePosX / 3) * 3; k < ((Math.floor(mousePosX / 3) * 3) + 3); k++) {
             for (let l: number = Math.floor(mousePosY / 3) * 3; l < ((Math.floor(mousePosY / 3) * 3) + 3); l++) {
-                if (k !== mousePosX || l !== mousePosY) {
+                if (k !== mousePosX && l !== mousePosY) {
+                    changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
                     changeCellDomains(k, l, keyNumber);
                 }
             }
@@ -56,7 +60,6 @@ window.addEventListener("keypress", (event: KeyboardEvent) => {
     } else if (
         mousePosX !== null
         && mousePosY !== null
-        && !isNaN(keyNumber)
     ) {
 
     }
@@ -86,6 +89,8 @@ canvas.addEventListener("mousemove", (event: MouseEvent) => {
         drawDomains();
         drawValues();
     }
+
+
 });
 
 canvas.addEventListener("mouseout", () => {
@@ -94,12 +99,14 @@ canvas.addEventListener("mouseout", () => {
     mousePosY = null;
 });
 
-const changeCellDomains = (i: number, j: number, value: number) => {
-    if (cellDomains[j][i].includes(value)) {
-        cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
-    } else {
-        cellDomains[j][i].push(value);
-        cellDomains[j][i].sort();
+const changeCellDomains = (i: number, j: number, value: number | null) => {
+    if (value) {
+        if (cellDomains[j][i].includes(value)) {
+            cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
+        } else {
+            cellDomains[j][i].push(value);
+            cellDomains[j][i].sort();
+        }
     }
 }
 

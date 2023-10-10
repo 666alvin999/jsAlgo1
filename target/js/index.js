@@ -37,21 +37,24 @@ window.addEventListener("keypress", (event) => {
   const keyNumber = parseInt(event.key);
   if (mousePosX !== null && mousePosY !== null && !isNaN(keyNumber) && keyNumber !== 0) {
     for (let i = 0;i < 9; i++) {
-      if (i < Math.floor(mousePosX / 3) * 3 || i >= Math.floor(mousePosX / 3) * 3 + 3) {
+      if (i !== mousePosX || i !== mousePosY) {
+        changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
+        changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
         changeCellDomains(i, mousePosY, keyNumber);
         changeCellDomains(mousePosX, i, keyNumber);
       }
     }
     for (let k = Math.floor(mousePosX / 3) * 3;k < Math.floor(mousePosX / 3) * 3 + 3; k++) {
       for (let l = Math.floor(mousePosY / 3) * 3;l < Math.floor(mousePosY / 3) * 3 + 3; l++) {
-        if (k !== mousePosX || l !== mousePosY) {
+        if (k !== mousePosX && l !== mousePosY) {
+          changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
           changeCellDomains(k, l, keyNumber);
         }
       }
     }
     drawCell(mousePosX, mousePosY, cellSize, "grey", "yellow");
     changeCellValues(mousePosX, mousePosY, keyNumber.toString());
-  } else if (mousePosX !== null && mousePosY !== null && !isNaN(keyNumber)) {
+  } else if (mousePosX !== null && mousePosY !== null) {
   }
 });
 canvas.addEventListener("mousemove", (event) => {
@@ -81,11 +84,13 @@ canvas.addEventListener("mouseout", () => {
   mousePosY = null;
 });
 var changeCellDomains = (i, j, value) => {
-  if (cellDomains[j][i].includes(value)) {
-    cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
-  } else {
-    cellDomains[j][i].push(value);
-    cellDomains[j][i].sort();
+  if (value) {
+    if (cellDomains[j][i].includes(value)) {
+      cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
+    } else {
+      cellDomains[j][i].push(value);
+      cellDomains[j][i].sort();
+    }
   }
 };
 var changeCellValues = (i, j, keyNumber) => {
@@ -171,8 +176,6 @@ var drawGrid = () => {
   drawDomains();
   drawValues();
 };
-console.log(cellValues);
-console.log(cellDomains);
 
 // src/frontend/index.ts
 webSocketStarter_default();
