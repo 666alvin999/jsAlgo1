@@ -6,11 +6,12 @@
     "start": "bun run ./src/index.ts",
     "start:backend": "bun run src/backend/index.ts 3000",
     "dev": "bun --watch src/index.ts",
-    "dev:backend": "bun --watch src/backend/index.ts 3000",
+    "dev:backend": "bun --hot run src/backend/index.ts 3000",
     "dev:frontend": "bun --watch src/frontend/index.ts",
-    "build:frontend": "bun build --minify src/frontend/index.ts --outdir=target/js"
+    "build:frontend": "bun build src/frontend/index.ts --outdir=target/js"
   },
   "devDependencies": {
+    "@types/web": "^0.0.116",
     "bun-types": "latest"
   },
   "peerDependencies": {

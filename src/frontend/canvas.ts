@@ -1,3 +1,6 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+
 const backgroundColor = "#999";
 const sameGroupColor = "#c2b500";
 const sameLineCellColor = "#9d9300"
@@ -24,7 +27,42 @@ for (let i: number = 0; i < 9; i++) {
     }
 }
 
-canvas.addEventListener("mousemove", (event) => {
+window.addEventListener("keypress", (event: KeyboardEvent) => {
+    const keyNumber = parseInt(event.key);
+
+    if (
+        mousePosX !== null
+        && mousePosY !== null
+        && !isNaN(keyNumber)
+        && keyNumber !== 0
+    ) {
+        for (let i: number = 0; i < 9; i++) {
+            if (i < Math.floor(mousePosX / 3) * 3 || i >= ((Math.floor(mousePosX / 3) * 3) + 3)) {
+                changeCellDomains(i, mousePosY, keyNumber);
+                changeCellDomains(mousePosX, i, keyNumber);
+            }
+        }
+
+        for (let k: number = Math.floor(mousePosX / 3) * 3; k < ((Math.floor(mousePosX / 3) * 3) + 3); k++) {
+            for (let l: number = Math.floor(mousePosY / 3) * 3; l < ((Math.floor(mousePosY / 3) * 3) + 3); l++) {
+                if (k !== mousePosX || l !== mousePosY) {
+                    changeCellDomains(k, l, keyNumber);
+                }
+            }
+        }
+
+        drawCell(mousePosX, mousePosY, cellSize, "grey", "yellow");
+        changeCellValues(mousePosX, mousePosY, keyNumber.toString());
+    } else if (
+        mousePosX !== null
+        && mousePosY !== null
+        && !isNaN(keyNumber)
+    ) {
+
+    }
+});
+
+canvas.addEventListener("mousemove", (event: MouseEvent) => {
     const i = Math.min(Math.floor(event.offsetX / cellSize), 8);
     const j = Math.min(Math.floor(event.offsetY / cellSize), 8);
 
@@ -46,35 +84,14 @@ canvas.addEventListener("mousemove", (event) => {
 
         drawCell(mousePosX, mousePosY, cellSize, "yellow", "yellow");
         drawDomains();
+        drawValues();
     }
 });
 
-canvas.addEventListener("mouseout", (event) => {
+canvas.addEventListener("mouseout", () => {
     drawGrid();
     mousePosX = null;
     mousePosY = null;
-});
-
-window.addEventListener("keypress", (event) => {
-    const keyNumber = parseInt(event.key);
-
-    if (
-        mousePosX !== null
-        && mousePosY !== null
-        && !isNaN(keyNumber)
-        && keyNumber !== 0
-    ) {
-
-        for (let k: number = Math.floor(mousePosX / 3) * 3; k < ((Math.floor(mousePosX / 3) * 3) + 3); k++) {
-            for (let l: number = Math.floor(mousePosY / 3) * 3; l < ((Math.floor(mousePosY / 3) * 3) + 3); l++) {
-                if (k !== mousePosX && l !== mousePosY) {
-                    changeCellDomains(k, l, keyNumber);
-                }
-            }
-        }
-
-        setCellValues(mousePosX, mousePosY, keyNumber.toString());
-    }
 });
 
 const changeCellDomains = (i: number, j: number, value: number) => {
@@ -84,27 +101,13 @@ const changeCellDomains = (i: number, j: number, value: number) => {
         cellDomains[j][i].push(value);
         cellDomains[j][i].sort();
     }
-
-    console.log(cellDomains[j][i]);
 }
 
-const setCellValues = (i: number, j: number, keyNumber: string) => {
+const changeCellValues = (i: number, j: number, keyNumber: string) => {
     const value = parseInt(keyNumber);
 
-    if (cellValues[j][i] !== value) {
-        drawCell(i, j, cellSize, "grey", "yellow");
-
-        ctx.fillStyle = "#000";
-        ctx.font = "32px Arial";
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "center";
-
-        cellValues[j][i] = value;
-
-        ctx.fillText(keyNumber, i * cellSize + cellSize / 2, j * cellSize + cellSize / 2);
-    } else {
-        cellValues[j][i] = null;
-    }
+    cellValues[j][i] = cellValues[j][i] !== value ? value : cellValues[j][i] = null;
+    drawValue(i, j);
 
     console.log(cellValues[j][i]);
 }
@@ -114,8 +117,8 @@ const clearCanvas = () => {
     ctx.fillRect(0, 0, width, height);
 };
 
-const drawDomain = (i: number, j: number, cellDomain: Array<number>) => {
-    const domain = cellDomain;
+const drawDomain = (i: number, j: number) => {
+    const domain = cellDomains[j][i];
 
     const areaSize = Math.max(cellSize - 2, Math.floor(cellSize * 0.8));
     const valueStep = Math.floor(areaSize / 3);
@@ -141,10 +144,31 @@ const drawDomains = () => {
     ctx.textBaseline = "top";
     ctx.textAlign = "start";
 
-    for (let i: number = 0; i < 10; i++) {
-        for (let j: number = 0; j < 10; j++) {
-            drawDomain(i, j, [1,2,3,4,5,6,7,8,9]);
+    for (let i: number = 0; i < 9; i++) {
+        for (let j: number = 0; j < 9; j++) {
+            if (!cellValues[j][i]) {
+                drawDomain(i, j);
+            }
         }
+    }
+}
+
+const drawValues = () => {
+    for (let i: number = 0; i < 9; i++) {
+        for (let j: number = 0; j < 9; j++) {
+            drawValue(i, j);
+        }
+    }
+}
+
+const drawValue = (i: number, j: number) => {
+    if (cellValues[j][i]) {
+        ctx.fillStyle = "#000";
+        ctx.font = "32px Arial";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+
+        ctx.fillText(cellValues[j][i]!.toString(), i * cellSize + cellSize / 2, j * cellSize + cellSize / 2);
     }
 }
 
@@ -172,6 +196,7 @@ const drawGroup = (i: number, j: number) => {
 
 const drawGrid = () => {
     clearCanvas();
+
     for (let i: number = 0; i < 3; i++) {
         for (let j: number = 0; j < 3; j++) {
             drawGroup(i, j);
@@ -179,6 +204,7 @@ const drawGrid = () => {
     }
 
     drawDomains();
+    drawValues();
 }
 
 export {drawGrid};

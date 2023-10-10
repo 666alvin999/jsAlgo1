@@ -1,9 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "ESNext",
-      "dom"
-    ],
+    "lib": ["esnext", "dom"],
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
@@ -14,7 +11,6 @@
     "strict": true,
     "alwaysStrict": true,
     "noImplicitAny": true,
-    "noEmitOnError": true,
     "strictNullChecks": true,
     "downlevelIteration": true,
     "skipLibCheck": true,
@@ -23,7 +19,8 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "types": [
-      "bun-types" // add Bun global
+      "bun-types", // add Bun global
+      "web"
     ]
   }
 }
