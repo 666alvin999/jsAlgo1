@@ -38,18 +38,30 @@ window.addEventListener("keypress", (event: KeyboardEvent) => {
     ) {
         for (let i: number = 0; i < 9; i++) {
             if (i !== mousePosX || i !== mousePosY) {
-                changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
-                changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
+                if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+                    changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
+                    changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
+                }
 
-                changeCellDomains(i, mousePosY, keyNumber);
-                changeCellDomains(mousePosX, i, keyNumber);
+                console.log(i, mousePosY, sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber))
+
+                if (!sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber)) {
+                    changeCellDomains(i, mousePosY, keyNumber);
+                }
+
+                if (!sameCellValuesModifyingCoordinates(mousePosX, i, keyNumber)) {
+                    changeCellDomains(mousePosX, i, keyNumber);
+                }
             }
         }
 
         for (let k: number = Math.floor(mousePosX / 3) * 3; k < ((Math.floor(mousePosX / 3) * 3) + 3); k++) {
             for (let l: number = Math.floor(mousePosY / 3) * 3; l < ((Math.floor(mousePosY / 3) * 3) + 3); l++) {
                 if (k !== mousePosX && l !== mousePosY) {
-                    changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
+                    if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+                        changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
+                    }
+
                     changeCellDomains(k, l, keyNumber);
                 }
             }
@@ -57,11 +69,6 @@ window.addEventListener("keypress", (event: KeyboardEvent) => {
 
         drawCell(mousePosX, mousePosY, cellSize, "grey", "yellow");
         changeCellValues(mousePosX, mousePosY, keyNumber.toString());
-    } else if (
-        mousePosX !== null
-        && mousePosY !== null
-    ) {
-
     }
 });
 
@@ -99,6 +106,29 @@ canvas.addEventListener("mouseout", () => {
     mousePosY = null;
 });
 
+const sameCellValuesModifyingCoordinates = (posX: number, posY: number, keyNumber: number): boolean => {
+    let foundCellValueModifyingCoordinates = false;
+    let i = 0;
+
+    while (!foundCellValueModifyingCoordinates && i < 9) {
+        if (
+            (
+                (i !== mousePosY && posX !== mousePosX)
+                && (i !== mousePosX && posY !== mousePosY)
+            )
+            && (
+                cellValues[i][posX] === keyNumber
+                || cellValues[posY][i] === keyNumber
+            )
+        ) {
+            foundCellValueModifyingCoordinates = true;
+        }
+        i++;
+    }
+
+    return foundCellValueModifyingCoordinates;
+}
+
 const changeCellDomains = (i: number, j: number, value: number | null) => {
     if (value) {
         if (cellDomains[j][i].includes(value)) {
@@ -113,10 +143,8 @@ const changeCellDomains = (i: number, j: number, value: number | null) => {
 const changeCellValues = (i: number, j: number, keyNumber: string) => {
     const value = parseInt(keyNumber);
 
-    cellValues[j][i] = cellValues[j][i] !== value ? value : cellValues[j][i] = null;
+    cellValues[j][i] = cellValues[j][i] !== value ? value : null;
     drawValue(i, j);
-
-    console.log(cellValues[j][i]);
 }
 
 const clearCanvas = () => {

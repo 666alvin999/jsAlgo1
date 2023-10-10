@@ -38,23 +38,31 @@ window.addEventListener("keypress", (event) => {
   if (mousePosX !== null && mousePosY !== null && !isNaN(keyNumber) && keyNumber !== 0) {
     for (let i = 0;i < 9; i++) {
       if (i !== mousePosX || i !== mousePosY) {
-        changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
-        changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
-        changeCellDomains(i, mousePosY, keyNumber);
-        changeCellDomains(mousePosX, i, keyNumber);
+        if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+          changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
+          changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
+        }
+        console.log(i, mousePosY, sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber));
+        if (!sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber)) {
+          changeCellDomains(i, mousePosY, keyNumber);
+        }
+        if (!sameCellValuesModifyingCoordinates(mousePosX, i, keyNumber)) {
+          changeCellDomains(mousePosX, i, keyNumber);
+        }
       }
     }
     for (let k = Math.floor(mousePosX / 3) * 3;k < Math.floor(mousePosX / 3) * 3 + 3; k++) {
       for (let l = Math.floor(mousePosY / 3) * 3;l < Math.floor(mousePosY / 3) * 3 + 3; l++) {
         if (k !== mousePosX && l !== mousePosY) {
-          changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
+          if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+            changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
+          }
           changeCellDomains(k, l, keyNumber);
         }
       }
     }
     drawCell(mousePosX, mousePosY, cellSize, "grey", "yellow");
     changeCellValues(mousePosX, mousePosY, keyNumber.toString());
-  } else if (mousePosX !== null && mousePosY !== null) {
   }
 });
 canvas.addEventListener("mousemove", (event) => {
@@ -83,6 +91,17 @@ canvas.addEventListener("mouseout", () => {
   mousePosX = null;
   mousePosY = null;
 });
+var sameCellValuesModifyingCoordinates = (posX, posY, keyNumber) => {
+  let foundCellValueModifyingCoordinates = false;
+  let i = 0;
+  while (!foundCellValueModifyingCoordinates && i < 9) {
+    if (i !== mousePosY && posX !== mousePosX && (i !== mousePosX && posY !== mousePosY) && (cellValues[i][posX] === keyNumber || cellValues[posY][i] === keyNumber)) {
+      foundCellValueModifyingCoordinates = true;
+    }
+    i++;
+  }
+  return foundCellValueModifyingCoordinates;
+};
 var changeCellDomains = (i, j, value) => {
   if (value) {
     if (cellDomains[j][i].includes(value)) {
@@ -95,9 +114,8 @@ var changeCellDomains = (i, j, value) => {
 };
 var changeCellValues = (i, j, keyNumber) => {
   const value = parseInt(keyNumber);
-  cellValues[j][i] = cellValues[j][i] !== value ? value : cellValues[j][i] = null;
+  cellValues[j][i] = cellValues[j][i] !== value ? value : null;
   drawValue(i, j);
-  console.log(cellValues[j][i]);
 };
 var clearCanvas = () => {
   ctx.fillStyle = backgroundColor;
