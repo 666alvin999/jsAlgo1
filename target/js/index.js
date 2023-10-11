@@ -35,29 +35,25 @@ for (let i = 0;i < 9; i++) {
 }
 window.addEventListener("keypress", (event) => {
   const keyNumber = parseInt(event.key);
-  if (mousePosX !== null && mousePosY !== null && !isNaN(keyNumber) && keyNumber !== 0) {
+  if (mousePosX !== null && mousePosY !== null && !isNaN(keyNumber) && keyNumber !== 0 && (cellDomains[mousePosY][mousePosX].includes(keyNumber) || cellValues[mousePosY][mousePosX] === keyNumber)) {
     for (let i = 0;i < 9; i++) {
-      if (i !== mousePosX || i !== mousePosY) {
-        if (cellValues[mousePosY][mousePosX] !== keyNumber) {
-          changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
-          changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
-        }
-        console.log(i, mousePosY, sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber));
-        if (!sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber)) {
-          changeCellDomains(i, mousePosY, keyNumber);
-        }
-        if (!sameCellValuesModifyingCoordinates(mousePosX, i, keyNumber)) {
-          changeCellDomains(mousePosX, i, keyNumber);
-        }
+      if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+        insertValueInDomain(i, mousePosY, cellValues[mousePosY][mousePosX]);
+        insertValueInDomain(mousePosX, i, cellValues[mousePosY][mousePosX]);
+        removeValueFromDomain(i, mousePosY, keyNumber);
+        removeValueFromDomain(mousePosX, i, keyNumber);
+      } else {
+        insertValueInDomain(i, mousePosY, keyNumber);
+        insertValueInDomain(mousePosX, i, keyNumber);
       }
     }
     for (let k = Math.floor(mousePosX / 3) * 3;k < Math.floor(mousePosX / 3) * 3 + 3; k++) {
       for (let l = Math.floor(mousePosY / 3) * 3;l < Math.floor(mousePosY / 3) * 3 + 3; l++) {
-        if (k !== mousePosX && l !== mousePosY) {
-          if (cellValues[mousePosY][mousePosX] !== keyNumber) {
-            changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
-          }
-          changeCellDomains(k, l, keyNumber);
+        if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+          insertValueInDomain(k, l, cellValues[mousePosY][mousePosX]);
+          removeValueFromDomain(k, l, keyNumber);
+        } else {
+          insertValueInDomain(k, l, keyNumber);
         }
       }
     }
@@ -91,25 +87,24 @@ canvas.addEventListener("mouseout", () => {
   mousePosX = null;
   mousePosY = null;
 });
-var sameCellValuesModifyingCoordinates = (posX, posY, keyNumber) => {
-  let foundCellValueModifyingCoordinates = false;
-  let i = 0;
-  while (!foundCellValueModifyingCoordinates && i < 9) {
-    if (i !== mousePosY && posX !== mousePosX && (i !== mousePosX && posY !== mousePosY) && (cellValues[i][posX] === keyNumber || cellValues[posY][i] === keyNumber)) {
-      foundCellValueModifyingCoordinates = true;
-    }
-    i++;
-  }
-  return foundCellValueModifyingCoordinates;
-};
-var changeCellDomains = (i, j, value) => {
-  if (value) {
-    if (cellDomains[j][i].includes(value)) {
-      cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
+var moreThanOneCellModifyingDomainWithValue = (posX, posY, value) => {
+  return cellValues.filter((cellValuesRow) => {
+    if (cellValues[posY] === cellValuesRow) {
+      return cellValuesRow.includes(value);
     } else {
-      cellDomains[j][i].push(value);
-      cellDomains[j][i].sort();
+      return cellValuesRow[posX] === value;
     }
+  }).length > 1;
+};
+var insertValueInDomain = (i, j, value) => {
+  if (value && !cellDomains[j][i].includes(value) && !moreThanOneCellModifyingDomainWithValue(i, j, value)) {
+    cellDomains[j][i].push(value);
+    cellDomains[j][i].sort();
+  }
+};
+var removeValueFromDomain = (i, j, value) => {
+  if (value && cellDomains[j][i].includes(value)) {
+    cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
   }
 };
 var changeCellValues = (i, j, keyNumber) => {

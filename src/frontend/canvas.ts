@@ -35,34 +35,31 @@ window.addEventListener("keypress", (event: KeyboardEvent) => {
         && mousePosY !== null
         && !isNaN(keyNumber)
         && keyNumber !== 0
+        && (
+            cellDomains[mousePosY][mousePosX].includes(keyNumber)
+            || cellValues[mousePosY][mousePosX] === keyNumber
+        )
     ) {
         for (let i: number = 0; i < 9; i++) {
-            if (i !== mousePosX || i !== mousePosY) {
-                if (cellValues[mousePosY][mousePosX] !== keyNumber) {
-                    changeCellDomains(i, mousePosY, cellValues[mousePosY][mousePosX]);
-                    changeCellDomains(mousePosX, i, cellValues[mousePosY][mousePosX]);
-                }
+            if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+                insertValueInDomain(i, mousePosY, cellValues[mousePosY][mousePosX]);
+                insertValueInDomain(mousePosX, i, cellValues[mousePosY][mousePosX]);
 
-                console.log(i, mousePosY, sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber))
-
-                if (!sameCellValuesModifyingCoordinates(i, mousePosY, keyNumber)) {
-                    changeCellDomains(i, mousePosY, keyNumber);
-                }
-
-                if (!sameCellValuesModifyingCoordinates(mousePosX, i, keyNumber)) {
-                    changeCellDomains(mousePosX, i, keyNumber);
-                }
+                removeValueFromDomain(i, mousePosY, keyNumber);
+                removeValueFromDomain(mousePosX, i, keyNumber);
+            } else {
+                insertValueInDomain(i, mousePosY, keyNumber);
+                insertValueInDomain(mousePosX, i, keyNumber);
             }
         }
 
         for (let k: number = Math.floor(mousePosX / 3) * 3; k < ((Math.floor(mousePosX / 3) * 3) + 3); k++) {
             for (let l: number = Math.floor(mousePosY / 3) * 3; l < ((Math.floor(mousePosY / 3) * 3) + 3); l++) {
-                if (k !== mousePosX && l !== mousePosY) {
-                    if (cellValues[mousePosY][mousePosX] !== keyNumber) {
-                        changeCellDomains(k, l, cellValues[mousePosY][mousePosX]);
-                    }
-
-                    changeCellDomains(k, l, keyNumber);
+                if (cellValues[mousePosY][mousePosX] !== keyNumber) {
+                    insertValueInDomain(k, l, cellValues[mousePosY][mousePosX]);
+                    removeValueFromDomain(k, l, keyNumber);
+                } else {
+                    insertValueInDomain(k, l, keyNumber);
                 }
             }
         }
@@ -106,37 +103,30 @@ canvas.addEventListener("mouseout", () => {
     mousePosY = null;
 });
 
-const sameCellValuesModifyingCoordinates = (posX: number, posY: number, keyNumber: number): boolean => {
-    let foundCellValueModifyingCoordinates = false;
-    let i = 0;
-
-    while (!foundCellValueModifyingCoordinates && i < 9) {
-        if (
-            (
-                (i !== mousePosY && posX !== mousePosX)
-                && (i !== mousePosX && posY !== mousePosY)
-            )
-            && (
-                cellValues[i][posX] === keyNumber
-                || cellValues[posY][i] === keyNumber
-            )
-        ) {
-            foundCellValueModifyingCoordinates = true;
+const moreThanOneCellModifyingDomainWithValue = (posX: number, posY: number, value: number): boolean => {
+    return cellValues.filter(cellValuesRow => {
+        if (cellValues[posY] === cellValuesRow) {
+            return cellValuesRow.includes(value);
+        } else {
+            return cellValuesRow[posX] === value;
         }
-        i++;
-    }
-
-    return foundCellValueModifyingCoordinates;
+    }).length > 1;
 }
 
-const changeCellDomains = (i: number, j: number, value: number | null) => {
-    if (value) {
-        if (cellDomains[j][i].includes(value)) {
-            cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
-        } else {
-            cellDomains[j][i].push(value);
-            cellDomains[j][i].sort();
-        }
+const insertValueInDomain = (i: number, j: number, value: number | null) => {
+    if (
+        value
+        && !cellDomains[j][i].includes(value)
+        && !moreThanOneCellModifyingDomainWithValue(i, j, value)
+    ) {
+        cellDomains[j][i].push(value);
+        cellDomains[j][i].sort();
+    }
+}
+
+const removeValueFromDomain = (i: number, j: number, value: number | null) => {
+    if (value && cellDomains[j][i].includes(value)) {
+        cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
     }
 }
 
