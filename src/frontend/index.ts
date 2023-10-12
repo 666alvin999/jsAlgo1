@@ -104,7 +104,7 @@ function start(initialState: InitialState) {
 		const j = selectedCell![1];
 
 		if (cells[j][i].getValue() === null) {
-			if (cells[j][i].getDomain().includes(v)) {
+			if (cells[j][i].getDomain().contains(v)) {
 				cells[j][i].setValue(v);
 				maintainImpactedCellsDomain(i, j, v, true);
 				refreshGrid();

@@ -124,7 +124,7 @@ class SudokuUI {
     const x = i * this._cellSize + cellPadding;
     const y = j * this._cellSize + cellPadding;
     for (let k = 1;k <= 9; k++) {
-      const vk = domain.includes(k) ? k : null;
+      const vk = domain.contains(k) ? k : null;
       const vi = (k - 1) % 3;
       const vj = Math.floor((k - 1) / 3);
       const vx = x + valueStep * vi;
@@ -186,11 +186,14 @@ class Domain {
   getIndexOf(value) {
     return this.domain.indexOf(value);
   }
-  includes(value) {
+  contains(value) {
     return this.domain.includes(value);
   }
   copy() {
     return new Domain(this.domain);
+  }
+  toArray() {
+    return this.domain;
   }
 }
 var domain_default = Domain;
@@ -284,7 +287,7 @@ var start = function(initialState) {
     const i = selectedCell[0];
     const j = selectedCell[1];
     if (cells[j][i].getValue() === null) {
-      if (cells[j][i].getDomain().includes(v)) {
+      if (cells[j][i].getDomain().contains(v)) {
         cells[j][i].setValue(v);
         maintainImpactedCellsDomain(i, j, v, true);
         refreshGrid();
