@@ -167,7 +167,7 @@ function wsInit() {
     }
   };
 }
-// src/frontend/io/domain.ts
+// src/frontend/io/bean/domain.ts
 class Domain {
   domain;
   constructor(values) {
@@ -189,8 +189,31 @@ class Domain {
   includes(value) {
     return this.domain.includes(value);
   }
+  copy() {
+    return new Domain(this.domain);
+  }
 }
 var domain_default = Domain;
+
+// src/frontend/io/bean/variable.ts
+class Variable {
+  domain;
+  value;
+  constructor(domain, value) {
+    this.domain = domain;
+    this.value = value ? value : null;
+  }
+  getDomain() {
+    return this.domain;
+  }
+  getValue() {
+    return this.value;
+  }
+  setValue(value) {
+    this.value = value;
+  }
+}
+var variable_default = Variable;
 
 // src/frontend/index.ts
 var init = function(canvasId) {
@@ -203,26 +226,23 @@ var init = function(canvasId) {
   if (!ui2) {
     return false;
   }
-  const cellDomains = [];
-  const cellValues = [];
+  const cells = [];
   for (let j = 0;j < 9; j++) {
-    cellDomains.push([]);
-    cellValues.push([]);
+    cells.push([]);
     for (let i = 0;i < 9; i++) {
-      cellDomains[j].push(new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
-      cellValues[j].push(null);
+      cells[j][i] = new variable_default(new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
     }
   }
-  return { canvas, ui: ui2, cellDomains, cellValues };
+  return { canvas, ui: ui2, cells };
 };
 var start = function(initialState) {
-  const { canvas, ui: ui2, cellDomains, cellValues } = initialState;
+  const { canvas, ui: ui2, cells } = initialState;
   let selectedCell = null;
   function drawCellContent(i, j) {
-    if (cellValues[j][i] !== null) {
-      ui2.drawCellValue(i, j, cellValues[j][i]);
+    if (cells[j][i].getValue() !== null) {
+      ui2.drawCellValue(i, j, cells[j][i].getValue());
     } else {
-      ui2.drawCellDomain(i, j, cellDomains[j][i]);
+      ui2.drawCellDomain(i, j, cells[j][i].getDomain());
     }
   }
   function drawCellsContent() {
@@ -233,10 +253,10 @@ var start = function(initialState) {
     }
   }
   function removeValueFromCellDomain(i, j, v) {
-    cellDomains[j][i].removeValueFromDomain(v);
+    cells[j][i].getDomain().removeValueFromDomain(v);
   }
   function addValueToCellDomain(i, j, v) {
-    cellDomains[j][i].insertValueInDomain(v);
+    cells[j][i].getDomain().insertValueInDomain(v);
   }
   function maintainImpactedCellsDomain(i, j, v, remove) {
     const action = remove ? removeValueFromCellDomain : addValueToCellDomain;
@@ -263,18 +283,18 @@ var start = function(initialState) {
   function toggle(v) {
     const i = selectedCell[0];
     const j = selectedCell[1];
-    if (cellValues[j][i] === null) {
-      if (cellDomains[j][i].includes(v)) {
-        cellValues[j][i] = v;
+    if (cells[j][i].getValue() === null) {
+      if (cells[j][i].getDomain().includes(v)) {
+        cells[j][i].setValue(v);
         maintainImpactedCellsDomain(i, j, v, true);
         refreshGrid();
       }
-    } else if (cellValues[j][i] === v) {
-      cellValues[j][i] = null;
+    } else if (cells[j][i].getValue() === v) {
+      cells[j][i].setValue(null);
       maintainImpactedCellsDomain(i, j, v, false);
       for (let j2 = 0;j2 < 9; j2++) {
         for (let i2 = 0;i2 < 9; i2++) {
-          if (cellValues[j2][i2] === v) {
+          if (cells[j2][i2].getValue() === v) {
             maintainImpactedCellsDomain(i2, j2, v, true);
           }
         }

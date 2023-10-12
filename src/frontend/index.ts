@@ -1,13 +1,13 @@
 /// <reference lib="dom" />
 
 import { wsInit, SudokuUI, eventHandlersInit } from "./io"
-import Domain from "./io/domain.ts";
+import Domain from "./io/bean/domain.ts";
+import Variable from "./io/bean/variable.ts";
 
 type InitialState = {
 	readonly canvas: HTMLCanvasElement,
 	readonly ui: SudokuUI,
-	readonly cellDomains: Array<Array<Domain<number>>>,
-	readonly cellValues: (number | null)[][]
+	readonly cells: Array<Array<Variable<number>>>
 }
 
 function init(canvasId: string): InitialState | false {
@@ -24,49 +24,46 @@ function init(canvasId: string): InitialState | false {
 		return false;
 	}
 
-	const cellDomains: Array<Array<Domain<number>>> = [];
-	const cellValues: (number | null)[][] = [];
+	const cells: Array<Array<Variable<number>>> = []
 
 	for (let j = 0; j < 9; j++) {
-		cellDomains.push([]);
-		cellValues.push([]);
+		cells.push([]);
 
 		for (let i = 0; i < 9; i++) {
-			cellDomains[j].push(new Domain<number>([1,2,3,4,5,6,7,8,9]));
-			cellValues[j].push(null);
+			cells[j][i] = new Variable<number>(new Domain([1,2,3,4,5,6,7,8,9]));
 		}
 	}
 
-	return { canvas, ui, cellDomains, cellValues };
+	return { canvas, ui, cells };
 }
 
 function start(initialState: InitialState) {
-	const {canvas, ui, cellDomains, cellValues} = initialState;
+	const {canvas, ui, cells} = initialState;
 
 	let selectedCell: [number, number] | null = null;
 
 	function drawCellContent(i: number, j: number) {
-		if (cellValues[j][i] !== null) {
-			ui.drawCellValue(i, j, cellValues[j][i]!);
+		if (cells[j][i].getValue() !== null) {
+			ui.drawCellValue(i, j, cells[j][i].getValue()!);
 		} else {
-			ui.drawCellDomain(i, j, cellDomains[j][i])
+			ui.drawCellDomain(i, j, cells[j][i].getDomain());
 		}
 	}
 
 	function drawCellsContent() {
 		for (let j = 0; j < 9; j++) {
 			for (let i = 0; i < 9; i++) {
-				drawCellContent(i, j)
+				drawCellContent(i, j);
 			}
 		}
 	}
 
 	function removeValueFromCellDomain(i: number, j: number, v: number) {
-		cellDomains[j][i].removeValueFromDomain(v)
+		cells[j][i].getDomain().removeValueFromDomain(v)
 	}
 
 	function addValueToCellDomain(i: number, j: number, v: number) {
-		cellDomains[j][i].insertValueInDomain(v);
+		cells[j][i].getDomain().insertValueInDomain(v);
 	}
 
 	function maintainImpactedCellsDomain(
@@ -106,19 +103,19 @@ function start(initialState: InitialState) {
 		const i = selectedCell![0];
 		const j = selectedCell![1];
 
-		if (cellValues[j][i] === null) {
-			if (cellDomains[j][i].includes(v)) {
-				cellValues[j][i] = v;
+		if (cells[j][i].getValue() === null) {
+			if (cells[j][i].getDomain().includes(v)) {
+				cells[j][i].setValue(v);
 				maintainImpactedCellsDomain(i, j, v, true);
 				refreshGrid();
 			}
-		} else if (cellValues[j][i] === v) {
-			cellValues[j][i] = null;
+		} else if (cells[j][i].getValue() === v) {
+			cells[j][i].setValue(null);
 			maintainImpactedCellsDomain(i, j, v, false);
 
 			for (let j2 = 0; j2 < 9; j2++) {
 				for (let i2 = 0; i2 < 9; i2++) {
-					if (cellValues[j2][i2] === v) {
+					if (cells[j2][i2].getValue() === v) {
 						maintainImpactedCellsDomain(i2, j2, v, true);
 					}
 				}

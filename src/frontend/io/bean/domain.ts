@@ -24,6 +24,14 @@ class Domain<T> {
     public includes(value: T) {
         return this.domain.includes(value);
     }
+
+    public copy(): Domain<T> {
+        return new Domain(this.domain);
+    }
+
+    public toArray() {
+        return this.domain;
+    }
 }
 
 export default Domain;
