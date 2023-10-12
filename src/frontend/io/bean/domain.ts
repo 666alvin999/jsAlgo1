@@ -21,7 +21,7 @@ class Domain<T> {
         return this.domain.indexOf(value);
     }
 
-    public includes(value: T) {
+    public contains(value: T) {
         return this.domain.includes(value);
     }
 
