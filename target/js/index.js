@@ -1,195 +1,303 @@
-// src/frontend/webSocketStarter.ts
-var webClientStarter = () => {
-  const wsClient = new WebSocket(`ws://${location.host}`);
-  wsClient.onopen = () => {
-    setInterval(() => wsClient.send("Hello mon copaing"), 5000);
-  };
-  wsClient.onmessage = (event) => {
+// src/frontend/io/eventHandlers.ts
+function eventHandlersInit(params) {
+  function canvasMouseMove(event) {
+    event.stopPropagation();
+    const x = event.offsetX;
+    const y = event.offsetY;
+    const i = Math.min(Math.floor(x / params.ui.cellSize), 8);
+    const j = Math.min(Math.floor(y / params.ui.cellSize), 8);
+    const selectedCell = params.getSelectedCell();
+    if (selectedCell === null || selectedCell[0] !== i || selectedCell[1] !== j) {
+      params.setSelectedCell([i, j]);
+      params.refreshGrid();
+    }
+  }
+  function canvasMouseOut(event) {
+    event.stopPropagation();
+    if (params.getSelectedCell() !== null) {
+      params.setSelectedCell(null);
+      params.refreshGrid();
+    }
+  }
+  function keyUp(event) {
+    event.stopPropagation();
+    if (event.key >= "1" && event.key <= "9" && params.getSelectedCell() !== null) {
+      params.toggle(parseInt(event.key));
+    }
+  }
+  params.canvas.addEventListener("mousemove", canvasMouseMove);
+  params.canvas.addEventListener("mouseout", canvasMouseOut);
+  document.onkeyup = keyUp;
+}
+// src/frontend/io/ui.ts
+class SudokuUI {
+  _canvas;
+  _ctx;
+  static _uis = new WeakMap;
+  _cellSize;
+  static bgColor = "#DDD";
+  static thinLineColor = "#AAA";
+  static boldLineColor = "#000";
+  static impactedColor = "#eec";
+  static selectedColor = "#ff6";
+  static get(canvas) {
+    if (SudokuUI._uis.has(canvas)) {
+      return SudokuUI._uis.get(canvas);
+    }
+    const ctx = canvas.getContext("2d");
+    if (ctx === null) {
+      return false;
+    }
+    const ui = new SudokuUI(canvas, ctx);
+    SudokuUI._uis.set(canvas, ui);
+    return ui;
+  }
+  constructor(_canvas, _ctx) {
+    this._canvas = _canvas;
+    this._ctx = _ctx;
+    this._cellSize = Math.round(Math.min(_canvas.width, _canvas.height) / 9);
+  }
+  get width() {
+    return this._canvas.width;
+  }
+  get height() {
+    return this._canvas.height;
+  }
+  get cellSize() {
+    return this._cellSize;
+  }
+  clearCanvas() {
+    this._ctx.fillStyle = SudokuUI.bgColor;
+    this._ctx.fillRect(0, 0, this.width, this.height);
+    return this;
+  }
+  drawCell(i, j, cellSize = this._cellSize, borderColor = SudokuUI.thinLineColor, fillColor) {
+    const x = i * cellSize;
+    const y = j * cellSize;
+    if (fillColor) {
+      this._ctx.fillStyle = fillColor;
+      this._ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+    }
+    this._ctx.strokeStyle = borderColor;
+    this._ctx.strokeRect(x, y, cellSize, cellSize);
+    return this;
+  }
+  drawRow(j, fillColor) {
+    for (let i = 0;i < 9; i++) {
+      this.drawCell(i, j, this._cellSize, SudokuUI.thinLineColor, fillColor);
+    }
+    return this;
+  }
+  drawColumn(i, fillColor) {
+    for (let j = 0;j < 9; j++) {
+      this.drawCell(i, j, this._cellSize, SudokuUI.thinLineColor, fillColor);
+    }
+    return this;
+  }
+  drawGroup(groupI, groupJ, fillColor) {
+    this.drawCell(groupI, groupJ, this._cellSize * 3, SudokuUI.boldLineColor, fillColor);
+    for (let j = 0;j < 3; j++) {
+      for (let i = 0;i < 3; i++) {
+        this.drawCell(groupI * 3 + i, groupJ * 3 + j, this._cellSize, SudokuUI.thinLineColor);
+      }
+    }
+    return this;
+  }
+  drawCellValue(i, j, value) {
+    this._ctx.fillStyle = "#000";
+    this._ctx.font = "bold 60px Arial";
+    this._ctx.textBaseline = "middle";
+    this._ctx.textAlign = "center";
+    const x = i * this._cellSize + Math.floor(this._cellSize * 0.5);
+    const y = j * this._cellSize + Math.floor(this._cellSize * 0.575);
+    this._ctx.fillText(value.toString(), x, y);
+    return this;
+  }
+  drawCellDomain(i, j, domain) {
+    this._ctx.fillStyle = "#000";
+    this._ctx.font = "16px Arial";
+    this._ctx.textBaseline = "top";
+    this._ctx.textAlign = "start";
+    const areaSize = Math.max(this._cellSize - 2, Math.floor(this._cellSize * 0.8));
+    const valueStep = Math.floor(areaSize / 3);
+    const cellPadding = Math.max(1, Math.floor(this._cellSize * 0.1));
+    const x = i * this._cellSize + cellPadding;
+    const y = j * this._cellSize + cellPadding;
+    for (let k = 1;k <= 9; k++) {
+      const vk = domain.includes(k) ? k : null;
+      const vi = (k - 1) % 3;
+      const vj = Math.floor((k - 1) / 3);
+      const vx = x + valueStep * vi;
+      const vy = y + valueStep * vj;
+      this._ctx.fillText(vk !== null ? vk.toString() : "", vx, vy);
+    }
+    return this;
+  }
+  drawEmptyGrid() {
+    this.clearCanvas();
+    for (let j = 0;j < 3; j++) {
+      for (let i = 0;i < 3; i++) {
+        this.drawGroup(i, j);
+      }
+    }
+    return this;
+  }
+  colorizeSelectedStuff(selectedCell) {
+    if (selectedCell === null) {
+      return this;
+    }
+    const selectedGroup = [
+      Math.floor(selectedCell[0] / 3),
+      Math.floor(selectedCell[1] / 3)
+    ];
+    this.drawRow(selectedCell[1], SudokuUI.impactedColor).drawColumn(selectedCell[0], SudokuUI.impactedColor).drawGroup(selectedGroup[0], selectedGroup[1], SudokuUI.impactedColor).drawCell(selectedCell[0], selectedCell[1], this._cellSize, SudokuUI.thinLineColor, SudokuUI.selectedColor);
+    return this;
+  }
+}
+// src/frontend/io/ws.ts
+function wsInit() {
+  const ws = new WebSocket(`ws://${location.host}`);
+  ws.onopen = () => setInterval(() => ws.send("ping"), 5000);
+  ws.onmessage = (event) => {
+    if (event.data !== "Well received") {
+      console.log(event.data);
+    }
     if (event.data === "reload") {
       location.reload();
     }
   };
-};
-var webSocketStarter_default = webClientStarter;
-
-// src/frontend/canvas.ts
-var backgroundColor = "#999";
-var sameGroupColor = "#c2b500";
-var sameLineCellColor = "#9d9300";
-var canvas = document.querySelector("#sudokuCanvas");
-var ctx = canvas.getContext("2d");
-var width = canvas.width;
-var height = canvas.height;
-var cellSize = Math.round(Math.min(width, height) / 9);
-var cellDomains = [];
-var cellValues = [];
-var mousePosX = null;
-var mousePosY = null;
-for (let i = 0;i < 9; i++) {
-  cellDomains.push([]);
-  cellValues.push([]);
-  for (let j = 0;j < 9; j++) {
-    cellDomains[i].push([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    cellValues[i].push(null);
+}
+// src/frontend/io/domain.ts
+class Domain {
+  domain;
+  constructor(values) {
+    this.domain = values;
+  }
+  removeValueFromDomain(value) {
+    if (this.domain.includes(value)) {
+      this.domain.splice(this.domain.indexOf(value), 1);
+    }
+  }
+  insertValueInDomain(value) {
+    if (!this.domain.includes(value)) {
+      this.domain.push(value);
+    }
+  }
+  getIndexOf(value) {
+    return this.domain.indexOf(value);
+  }
+  includes(value) {
+    return this.domain.includes(value);
   }
 }
-window.addEventListener("keypress", (event) => {
-  const keyNumber = parseInt(event.key);
-  if (mousePosX !== null && mousePosY !== null && !isNaN(keyNumber) && keyNumber !== 0 && (cellDomains[mousePosY][mousePosX].includes(keyNumber) || cellValues[mousePosY][mousePosX] === keyNumber)) {
+var domain_default = Domain;
+
+// src/frontend/index.ts
+var init = function(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (canvas === null) {
+    console.error("Cannot get the given Canvas 2D rendering context");
+    return false;
+  }
+  const ui2 = SudokuUI.get(canvas);
+  if (!ui2) {
+    return false;
+  }
+  const cellDomains = [];
+  const cellValues = [];
+  for (let j = 0;j < 9; j++) {
+    cellDomains.push([]);
+    cellValues.push([]);
     for (let i = 0;i < 9; i++) {
-      if (cellValues[mousePosY][mousePosX] !== keyNumber) {
-        insertValueInDomain(i, mousePosY, cellValues[mousePosY][mousePosX]);
-        insertValueInDomain(mousePosX, i, cellValues[mousePosY][mousePosX]);
-        removeValueFromDomain(i, mousePosY, keyNumber);
-        removeValueFromDomain(mousePosX, i, keyNumber);
-      } else {
-        insertValueInDomain(i, mousePosY, keyNumber);
-        insertValueInDomain(mousePosX, i, keyNumber);
+      cellDomains[j].push(new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+      cellValues[j].push(null);
+    }
+  }
+  return { canvas, ui: ui2, cellDomains, cellValues };
+};
+var start = function(initialState) {
+  const { canvas, ui: ui2, cellDomains, cellValues } = initialState;
+  let selectedCell = null;
+  function drawCellContent(i, j) {
+    if (cellValues[j][i] !== null) {
+      ui2.drawCellValue(i, j, cellValues[j][i]);
+    } else {
+      ui2.drawCellDomain(i, j, cellDomains[j][i]);
+    }
+  }
+  function drawCellsContent() {
+    for (let j = 0;j < 9; j++) {
+      for (let i = 0;i < 9; i++) {
+        drawCellContent(i, j);
       }
     }
-    for (let k = Math.floor(mousePosX / 3) * 3;k < Math.floor(mousePosX / 3) * 3 + 3; k++) {
-      for (let l = Math.floor(mousePosY / 3) * 3;l < Math.floor(mousePosY / 3) * 3 + 3; l++) {
-        if (cellValues[mousePosY][mousePosX] !== keyNumber) {
-          insertValueInDomain(k, l, cellValues[mousePosY][mousePosX]);
-          removeValueFromDomain(k, l, keyNumber);
-        } else {
-          insertValueInDomain(k, l, keyNumber);
+  }
+  function removeValueFromCellDomain(i, j, v) {
+    cellDomains[j][i].removeValueFromDomain(v);
+  }
+  function addValueToCellDomain(i, j, v) {
+    cellDomains[j][i].insertValueInDomain(v);
+  }
+  function maintainImpactedCellsDomain(i, j, v, remove) {
+    const action = remove ? removeValueFromCellDomain : addValueToCellDomain;
+    for (let k = 0;k < 9; k++) {
+      if (k !== i) {
+        action(k, j, v);
+      }
+      if (k !== j) {
+        action(i, k, v);
+      }
+    }
+    const iGroup = Math.floor(i / 3);
+    const jGroup = Math.floor(j / 3);
+    for (let j2 = 0;j2 < 3; j2++) {
+      for (let i2 = 0;i2 < 3; i2++) {
+        const iCell = iGroup * 3 + i2;
+        const jCell = jGroup * 3 + j2;
+        if (iCell !== i && jCell !== j) {
+          action(iCell, jCell, v);
         }
       }
     }
-    drawCell(mousePosX, mousePosY, cellSize, "grey", "yellow");
-    changeCellValues(mousePosX, mousePosY, keyNumber.toString());
   }
-});
-canvas.addEventListener("mousemove", (event) => {
-  const i = Math.min(Math.floor(event.offsetX / cellSize), 8);
-  const j = Math.min(Math.floor(event.offsetY / cellSize), 8);
-  if (mousePosX !== i || mousePosY !== j) {
-    drawGrid();
-    mousePosX = i;
-    mousePosY = j;
-    for (let k = 0;k < 9; k++) {
-      drawCell(k, mousePosY, cellSize, "grey", sameLineCellColor);
-      drawCell(mousePosX, k, cellSize, "grey", sameLineCellColor);
-    }
-    for (let k = Math.floor(mousePosX / 3) * 3;k < Math.floor(mousePosX / 3) * 3 + 3; k++) {
-      for (let l = Math.floor(mousePosY / 3) * 3;l < Math.floor(mousePosY / 3) * 3 + 3; l++) {
-        drawCell(k, l, cellSize, "grey", sameGroupColor);
+  function toggle(v) {
+    const i = selectedCell[0];
+    const j = selectedCell[1];
+    if (cellValues[j][i] === null) {
+      if (cellDomains[j][i].includes(v)) {
+        cellValues[j][i] = v;
+        maintainImpactedCellsDomain(i, j, v, true);
+        refreshGrid();
       }
-    }
-    drawCell(mousePosX, mousePosY, cellSize, "yellow", "yellow");
-    drawDomains();
-    drawValues();
-  }
-});
-canvas.addEventListener("mouseout", () => {
-  drawGrid();
-  mousePosX = null;
-  mousePosY = null;
-});
-var moreThanOneCellModifyingDomainWithValue = (posX, posY, value) => {
-  return cellValues.filter((cellValuesRow) => {
-    if (cellValues[posY] === cellValuesRow) {
-      return cellValuesRow.includes(value);
-    } else {
-      return cellValuesRow[posX] === value;
-    }
-  }).length > 1;
-};
-var insertValueInDomain = (i, j, value) => {
-  if (value && !cellDomains[j][i].includes(value) && !moreThanOneCellModifyingDomainWithValue(i, j, value)) {
-    cellDomains[j][i].push(value);
-    cellDomains[j][i].sort();
-  }
-};
-var removeValueFromDomain = (i, j, value) => {
-  if (value && cellDomains[j][i].includes(value)) {
-    cellDomains[j][i].splice(cellDomains[j][i].indexOf(value), 1);
-  }
-};
-var changeCellValues = (i, j, keyNumber) => {
-  const value = parseInt(keyNumber);
-  cellValues[j][i] = cellValues[j][i] !== value ? value : null;
-  drawValue(i, j);
-};
-var clearCanvas = () => {
-  ctx.fillStyle = backgroundColor;
-  ctx.fillRect(0, 0, width, height);
-};
-var drawDomain = (i, j) => {
-  const domain = cellDomains[j][i];
-  const areaSize = Math.max(cellSize - 2, Math.floor(cellSize * 0.8));
-  const valueStep = Math.floor(areaSize / 3);
-  const cellPadding = Math.max(1, Math.floor(cellSize * 0.1));
-  const x = i * cellSize + cellPadding;
-  const y = j * cellSize + cellPadding;
-  for (let k = 1;k <= 9; k++) {
-    const vk = domain.includes(k) ? k : null;
-    const vi = (k - 1) % 3;
-    const vj = Math.floor((k - 1) / 3);
-    const vx = x + valueStep * vi;
-    const vy = y + valueStep * vj;
-    ctx.fillText(vk ? vk.toString() : "", vx, vy);
-  }
-};
-var drawDomains = () => {
-  ctx.fillStyle = "#000";
-  ctx.font = "16px Arial";
-  ctx.textBaseline = "top";
-  ctx.textAlign = "start";
-  for (let i = 0;i < 9; i++) {
-    for (let j = 0;j < 9; j++) {
-      if (!cellValues[j][i]) {
-        drawDomain(i, j);
+    } else if (cellValues[j][i] === v) {
+      cellValues[j][i] = null;
+      maintainImpactedCellsDomain(i, j, v, false);
+      for (let j2 = 0;j2 < 9; j2++) {
+        for (let i2 = 0;i2 < 9; i2++) {
+          if (cellValues[j2][i2] === v) {
+            maintainImpactedCellsDomain(i2, j2, v, true);
+          }
+        }
       }
+      refreshGrid();
     }
   }
-};
-var drawValues = () => {
-  for (let i = 0;i < 9; i++) {
-    for (let j = 0;j < 9; j++) {
-      drawValue(i, j);
-    }
+  function refreshGrid() {
+    ui2.drawEmptyGrid().colorizeSelectedStuff(selectedCell);
+    drawCellsContent();
   }
+  eventHandlersInit({
+    canvas,
+    ui: ui2,
+    refreshGrid,
+    toggle,
+    getSelectedCell: () => selectedCell,
+    setSelectedCell: (newCell) => selectedCell = newCell
+  });
+  wsInit();
+  refreshGrid();
 };
-var drawValue = (i, j) => {
-  if (cellValues[j][i]) {
-    ctx.fillStyle = "#000";
-    ctx.font = "32px Arial";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    ctx.fillText(cellValues[j][i].toString(), i * cellSize + cellSize / 2, j * cellSize + cellSize / 2);
-  }
-};
-var drawCell = (x, y, cellSize2, borderColor, fillColor) => {
-  const startX = x * cellSize2;
-  const startY = y * cellSize2;
-  if (fillColor) {
-    ctx.fillStyle = fillColor;
-    ctx.fillRect(startX, startY, cellSize2, cellSize2);
-  }
-  ctx.strokeStyle = borderColor;
-  ctx.strokeRect(startX, startY, cellSize2, cellSize2);
-};
-var drawGroup = (i, j) => {
-  for (let k = 0;k < 3; k++) {
-    for (let l = 0;l < 3; l++) {
-      drawCell(k + 3 * i, l + 3 * j, cellSize, "grey");
-    }
-  }
-  drawCell(i, j, cellSize * 3, "black");
-};
-var drawGrid = () => {
-  clearCanvas();
-  for (let i = 0;i < 3; i++) {
-    for (let j = 0;j < 3; j++) {
-      drawGroup(i, j);
-    }
-  }
-  drawDomains();
-  drawValues();
-};
-
-// src/frontend/index.ts
-webSocketStarter_default();
-drawGrid();
+var retInit = init("sudokuCanvas");
+if (retInit) {
+  start(retInit);
+}

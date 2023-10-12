@@ -3,7 +3,7 @@ import { WatchEventType, watch, FSWatcher } from "node:fs"
 import type { ServerWebSocket, Server } from "bun"
 
 const port: number = parseInt(process.argv[2])
-const baseDir = join(import.meta.dir, "..", "..", "www")
+const baseDir = join(import.meta.dir, "..", "..", "target")
 
 const wsClients: Set<ServerWebSocket> = new Set()
 const watcher: FSWatcher = watch(
