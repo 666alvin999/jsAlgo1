@@ -1,3 +1,8 @@
+type JSONPrimitives = number | string | boolean | null
+type JSONArray = JSON[]
+type JSONObject = {[key: string]: JSON}
+type JSON = JSONPrimitives | JSONArray | JSONObject
+
 class Domain<T> {
     private domain: Array<T>;
 
@@ -21,7 +26,7 @@ class Domain<T> {
         return this.domain.indexOf(value);
     }
 
-    public contains(value: T) {
+    public hasValue(value: T): boolean {
         return this.domain.includes(value);
     }
 
@@ -29,8 +34,22 @@ class Domain<T> {
         return new Domain(this.domain);
     }
 
-    public toArray() {
-        return this.domain;
+    public toJSON(): JSONArray {
+        return this.domain as JSONArray
+    }
+
+    public static fromJSON(jsonDomain: JSONArray) {
+        if (
+            typeof jsonDomain[0] === "number"
+            || typeof jsonDomain[0] === "string"
+            || typeof jsonDomain[0] === "boolean"
+            || typeof jsonDomain[0] === null
+        ) {
+            return new Domain<typeof jsonDomain[0]>(jsonDomain);
+        }
+        else {
+            return new Domain([]);
+        }
     }
 }
 
