@@ -30,7 +30,7 @@ function init(canvasId: string): InitialState | false {
 		cells.push([]);
 
 		for (let i = 0; i < 9; i++) {
-			cells[j][i] = new Variable<number>(new Domain([1,2,3,4,5,6,7,8,9]));
+			cells[j][i] = new Variable<number>(i, j, new Domain([1,2,3,4,5,6,7,8,9]));
 		}
 	}
 
@@ -104,13 +104,13 @@ function start(initialState: InitialState) {
 		const j = selectedCell![1];
 
 		if (cells[j][i].getValue() === null) {
-			if (cells[j][i].getDomain().contains(v)) {
+			if (cells[j][i].getDomain().hasValue(v)) {
 				cells[j][i].setValue(v);
 				maintainImpactedCellsDomain(i, j, v, true);
 				refreshGrid();
 			}
 		} else if (cells[j][i].getValue() === v) {
-			cells[j][i].setValue(null);
+			cells[j][i].unsetValue();
 			maintainImpactedCellsDomain(i, j, v, false);
 
 			for (let j2 = 0; j2 < 9; j2++) {

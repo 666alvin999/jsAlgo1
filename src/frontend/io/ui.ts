@@ -129,7 +129,7 @@ export class SudokuUI {
 		const y = j * this._cellSize + cellPadding;
 
 		for (let k = 1; k <= 9; k++) {
-			const vk = domain.contains(k) ? k : null;
+			const vk = domain.hasValue(k) ? k : null;
 			const vi = (k - 1) % 3;
 			const vj = Math.floor((k - 1) / 3);
 			const vx = x + valueStep * vi;
