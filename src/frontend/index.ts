@@ -31,7 +31,7 @@ function init(canvasId: string): InitialState | false {
         cells.push([]);
 
         for (let i = 0; i < 9; i++) {
-            cells[j][i] = new Variable<SudokuValues>(i, j, new Domain<SudokuValues>([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+            cells[j][i] = new Variable<SudokuValues>(i, j, new Domain<SudokuValues>(new Set([1, 2, 3, 4, 5, 6, 7, 8, 9])));
         }
     }
 

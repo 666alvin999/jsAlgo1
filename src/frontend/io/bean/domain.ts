@@ -1,26 +1,22 @@
 import {JSONArray, JSONPrimitives} from "../../Types.ts";
 
 class Domain<T> {
-    private readonly domain: Array<T>;
+    private readonly domain: Set<T>;
 
-    public constructor(values: Array<T>) {
+    public constructor(values: Set<T>) {
         this.domain = values
     }
 
     public removeValueFromDomain(value: T) {
-        if (this.domain.includes(value)) {
-            this.domain.splice(this.domain.indexOf(value), 1);
-        }
+        this.domain.delete(value);
     }
 
     public insertValueInDomain(value: T) {
-        if (!this.domain.includes(value)) {
-            this.domain.push(value);
-        }
+        this.domain.add(value);
     }
 
     public hasValue(value: T): boolean {
-        return this.domain.includes(value);
+        return this.domain.has(value);
     }
 
     public copy(): Domain<T> {
@@ -28,7 +24,7 @@ class Domain<T> {
     }
 
     public toJSON(): JSONArray {
-        return this.domain as JSONArray
+        return Array.from(this.domain) as JSONArray
     }
 
     public static fromJSON<T extends JSONPrimitives>(jsonDomain: JSONArray) {
@@ -48,7 +44,7 @@ class Domain<T> {
                 throw new Error("At least one element does not have the same type as the other")
             }
 
-            return new Domain<T>(jsonDomain as Array<T>);
+            return new Domain<T>(new Set(jsonDomain as Array<T>));
         }
     }
 }
