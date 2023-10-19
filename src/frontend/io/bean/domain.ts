@@ -34,17 +34,24 @@ class Domain<T> {
         return this.domain as JSONArray
     }
 
-    public static fromJSON(jsonDomain: JSONArray) {
-        if (
-            typeof jsonDomain[0] === "number"
-            || typeof jsonDomain[0] === "string"
-            || typeof jsonDomain[0] === "boolean"
-            || typeof jsonDomain[0] === null
-        ) {
-            return new Domain<typeof jsonDomain[0]>(jsonDomain);
-        }
-        else {
-            return new Domain([]);
+    public static fromJSON<T extends JSONPrimitives>(jsonDomain: JSONArray) {
+        let validationOk: boolean = Array.isArray(jsonDomain);
+
+        if (jsonDomain.length > 0) {
+            const type = typeof jsonDomain[0];
+
+            validationOk = jsonDomain.reduce(
+                (acc: boolean, element: unknown) => {
+                    return acc && typeof element !== type
+                },
+                true
+            )
+
+            if (!validationOk) {
+                throw new Error("At least one element does not have the same type as the other")
+            }
+
+            return new Domain<T>(jsonDomain as Array<T>);
         }
     }
 }

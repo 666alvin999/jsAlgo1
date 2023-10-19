@@ -1,4 +1,6 @@
-import type { SudokuUI } from "./ui"
+import type { SudokuUI } from "./ui";
+
+type SudokuValues = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 type EventHandlersParams = {
 	readonly canvas: HTMLCanvasElement,
@@ -6,7 +8,7 @@ type EventHandlersParams = {
 	readonly refreshGrid: () => void,
 	readonly getSelectedCell: () => [number, number] | null,
 	readonly setSelectedCell: (newCell: [number, number] | null) => void,
-	readonly toggle: (v: number) => void,
+	readonly toggle: (v: SudokuValues) => void,
 }
 
 export function eventHandlersInit(params: EventHandlersParams) {
@@ -40,7 +42,7 @@ export function eventHandlersInit(params: EventHandlersParams) {
 		event.stopPropagation();
 
 		if (event.key >= "1" && event.key <= "9" && params.getSelectedCell() !== null) {
-			params.toggle(parseInt(event.key));
+			params.toggle(parseInt(event.key) as SudokuValues);
 		}
 	}
 

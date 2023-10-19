@@ -4,10 +4,12 @@ import {wsInit, SudokuUI, eventHandlersInit} from "./io"
 import Domain from "./io/bean/domain.ts";
 import Variable from "./io/bean/variable.ts";
 
+type SudokuValues = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
 type InitialState = {
     readonly canvas: HTMLCanvasElement,
     readonly ui: SudokuUI,
-    readonly cells: Array<Array<Variable<number>>>
+    readonly cells: Array<Array<Variable<SudokuValues>>>
 }
 
 function init(canvasId: string): InitialState | false {
@@ -24,19 +26,19 @@ function init(canvasId: string): InitialState | false {
         return false;
     }
 
-    const cells: Array<Array<Variable<number>>> = [];
+    const cells: Array<Array<Variable<SudokuValues>>> = [];
 
     for (let j = 0; j < 9; j++) {
         cells.push([]);
 
         for (let i = 0; i < 9; i++) {
-            cells[j][i] = new Variable<number>(i, j, new Domain([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+            cells[j][i] = new Variable<SudokuValues>(i, j, new Domain<SudokuValues>([1, 2, 3, 4, 5, 6, 7, 8, 9]));
         }
     }
 
     for (let i = 0; i < 9; i++) {
         for (let j = 0; j < 9; j++) {
-            let cell: Variable<number> = cells[j][i];
+            let cell: Variable<SudokuValues> = cells[j][i];
 
             for (let k = 0; k < 9; k++) {
                 cell.getRelatedVariables().add(cells[k][cell.getPosX()]);
@@ -83,7 +85,7 @@ function start(initialState: InitialState) {
         }
     }
 
-    function toggle(v: number) {
+    function toggle(v: SudokuValues) {
         const i = selectedCell![0];
         const j = selectedCell![1];
 
