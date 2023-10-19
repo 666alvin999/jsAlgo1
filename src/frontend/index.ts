@@ -1,152 +1,124 @@
 /// <reference lib="dom" />
 
-import { wsInit, SudokuUI, eventHandlersInit } from "./io"
+import {wsInit, SudokuUI, eventHandlersInit} from "./io"
 import Domain from "./io/bean/domain.ts";
 import Variable from "./io/bean/variable.ts";
 
 type InitialState = {
-	readonly canvas: HTMLCanvasElement,
-	readonly ui: SudokuUI,
-	readonly cells: Array<Array<Variable<number>>>
+    readonly canvas: HTMLCanvasElement,
+    readonly ui: SudokuUI,
+    readonly cells: Array<Array<Variable<number>>>
 }
 
 function init(canvasId: string): InitialState | false {
-	const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
 
-	if (canvas === null) {
-		console.error("Cannot get the given Canvas 2D rendering context");
-		return false;
-	}
+    if (canvas === null) {
+        console.error("Cannot get the given Canvas 2D rendering context");
+        return false;
+    }
 
-	const ui = SudokuUI.get(canvas);
+    const ui = SudokuUI.get(canvas);
 
-	if (!ui) {
-		return false;
-	}
+    if (!ui) {
+        return false;
+    }
 
-	const cells: Array<Array<Variable<number>>> = []
+    const cells: Array<Array<Variable<number>>> = [];
 
-	for (let j = 0; j < 9; j++) {
-		cells.push([]);
+    for (let j = 0; j < 9; j++) {
+        cells.push([]);
 
-		for (let i = 0; i < 9; i++) {
-			cells[j][i] = new Variable<number>(i, j, new Domain([1,2,3,4,5,6,7,8,9]));
-		}
-	}
+        for (let i = 0; i < 9; i++) {
+            cells[j][i] = new Variable<number>(i, j, new Domain([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+        }
+    }
 
-	return { canvas, ui, cells };
+    for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+            let cell: Variable<number> = cells[j][i];
+
+            for (let k = 0; k < 9; k++) {
+                cell.getRelatedVariables().add(cells[k][cell.getPosX()]);
+                cell.getRelatedVariables().add(cells[cell.getPosY()][k]);
+            }
+
+            const iGroup = Math.floor(i / 3);
+            const jGroup = Math.floor(j / 3);
+
+            for (let j2 = 0; j2 < 3; j2++) {
+                for (let i2 = 0; i2 < 3; i2++) {
+                    const iCell = iGroup * 3 + i2;
+                    const jCell = jGroup * 3 + j2;
+
+                    if (iCell !== i && jCell !== j) {
+                        cell.getRelatedVariables().add(cells[jCell][iCell]);
+                    }
+                }
+            }
+        }
+    }
+
+    return {canvas, ui, cells};
 }
 
 function start(initialState: InitialState) {
-	const {canvas, ui, cells} = initialState;
+    const {canvas, ui, cells} = initialState;
 
-	let selectedCell: [number, number] | null = null;
+    let selectedCell: [number, number] | null = null;
 
-	function drawCellContent(i: number, j: number) {
-		if (cells[j][i].getValue() !== null) {
-			ui.drawCellValue(i, j, cells[j][i].getValue()!);
-		} else {
-			ui.drawCellDomain(i, j, cells[j][i].getDomain());
-		}
-	}
+    function drawCellContent(i: number, j: number) {
+        if (cells[j][i].getValue() !== null) {
+            ui.drawCellValue(i, j, cells[j][i].getValue()!);
+        } else {
+            ui.drawCellDomain(i, j, cells[j][i].getDomain());
+        }
+    }
 
-	function drawCellsContent() {
-		for (let j = 0; j < 9; j++) {
-			for (let i = 0; i < 9; i++) {
-				drawCellContent(i, j);
-			}
-		}
-	}
+    function drawCellsContent() {
+        for (let j = 0; j < 9; j++) {
+            for (let i = 0; i < 9; i++) {
+                drawCellContent(i, j);
+            }
+        }
+    }
 
-	function removeValueFromCellDomain(i: number, j: number, v: number) {
-		cells[j][i].getDomain().removeValueFromDomain(v)
-	}
+    function toggle(v: number) {
+        const i = selectedCell![0];
+        const j = selectedCell![1];
 
-	function addValueToCellDomain(i: number, j: number, v: number) {
-		cells[j][i].getDomain().insertValueInDomain(v);
-	}
+        if (cells[j][i].getValue() === null) {
+            if (cells[j][i].getDomain().hasValue(v)) {
+                cells[j][i].setValue(v);
+                refreshGrid();
+            }
+        } else if (cells[j][i].getValue() === v) {
+            cells[j][i].unsetValue();
+            refreshGrid();
+        }
+    }
 
-	function maintainImpactedCellsDomain(
-		i: number,
-		j: number,
-		v: number,
-		remove: boolean
-	) {
-		const action = remove ? removeValueFromCellDomain : addValueToCellDomain;
+    function refreshGrid() {
+        ui.drawEmptyGrid().colorizeSelectedStuff(selectedCell);
 
-		for (let k = 0; k < 9; k++) {
-			if (k !== i) {
-				action(k, j, v);
-			}
+        drawCellsContent();
+    }
 
-			if (k !== j) {
-				action(i, k, v);
-			}
-		}
+    eventHandlersInit({
+        canvas,
+        ui,
+        refreshGrid,
+        toggle,
+        getSelectedCell: () => selectedCell,
+        setSelectedCell: (newCell: [number, number] | null) => selectedCell = newCell,
+    });
 
-		const iGroup = Math.floor(i / 3);
-		const jGroup = Math.floor(j / 3);
-
-		for (let j2 = 0; j2 < 3 ; j2++) {
-			for (let i2 = 0; i2 < 3; i2++) {
-				const iCell = iGroup * 3 + i2;
-				const jCell = jGroup * 3 + j2;
-
-				if (iCell !== i && jCell !== j) {
-					action(iCell, jCell, v);
-				}
-			}
-		}
-	}
-
-	function toggle(v: number) {
-		const i = selectedCell![0];
-		const j = selectedCell![1];
-
-		if (cells[j][i].getValue() === null) {
-			if (cells[j][i].getDomain().hasValue(v)) {
-				cells[j][i].setValue(v);
-				maintainImpactedCellsDomain(i, j, v, true);
-				refreshGrid();
-			}
-		} else if (cells[j][i].getValue() === v) {
-			cells[j][i].unsetValue();
-			maintainImpactedCellsDomain(i, j, v, false);
-
-			for (let j2 = 0; j2 < 9; j2++) {
-				for (let i2 = 0; i2 < 9; i2++) {
-					if (cells[j2][i2].getValue() === v) {
-						maintainImpactedCellsDomain(i2, j2, v, true);
-					}
-				}
-			}
-
-			refreshGrid();
-		}
-	}
-
-	function refreshGrid() {
-		ui.drawEmptyGrid()
-			.colorizeSelectedStuff(selectedCell);
-
-		drawCellsContent();
-	}
-
-	eventHandlersInit({
-		canvas,
-		ui,
-		refreshGrid,
-		toggle,
-		getSelectedCell: () => selectedCell,
-		setSelectedCell: (newCell: [number, number] | null) => selectedCell = newCell,
-	});
-
-	wsInit();
-	refreshGrid();
+    wsInit();
+    refreshGrid();
 }
 
 const retInit = init("sudokuCanvas");
 
 if (retInit) {
-	start(retInit);
+    start(retInit);
 }

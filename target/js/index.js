@@ -124,7 +124,7 @@ class SudokuUI {
     const x = i * this._cellSize + cellPadding;
     const y = j * this._cellSize + cellPadding;
     for (let k = 1;k <= 9; k++) {
-      const vk = domain.contains(k) ? k : null;
+      const vk = domain.hasValue(k) ? k : null;
       const vi = (k - 1) % 3;
       const vj = Math.floor((k - 1) / 3);
       const vx = x + valueStep * vi;
@@ -183,37 +183,88 @@ class Domain {
       this.domain.push(value);
     }
   }
-  getIndexOf(value) {
-    return this.domain.indexOf(value);
-  }
-  contains(value) {
+  hasValue(value) {
     return this.domain.includes(value);
   }
   copy() {
     return new Domain(this.domain);
   }
-  toArray() {
+  toJSON() {
     return this.domain;
+  }
+  static fromJSON(jsonDomain) {
+    if (typeof jsonDomain[0] === "number" || typeof jsonDomain[0] === "string" || typeof jsonDomain[0] === "boolean" || typeof jsonDomain[0] === null) {
+      return new Domain(jsonDomain);
+    } else {
+      return new Domain([]);
+    }
   }
 }
 var domain_default = Domain;
 
 // src/frontend/io/bean/variable.ts
 class Variable {
-  domain;
+  posX;
+  posY;
+  domain2;
   value;
-  constructor(domain, value) {
-    this.domain = domain;
+  relatedVariables;
+  constructor(posX, posY, domain2, value) {
+    this.posX = posX;
+    this.posY = posY;
+    this.domain = domain2;
     this.value = value ? value : null;
+    this.relatedVariables = new Set;
+  }
+  removeValueFromDomain(value) {
+    this.domain.removeValueFromDomain(value);
+  }
+  insertValueInDomain(value) {
+    if (!this.moreThanOneRelatedVariableHasValue(value)) {
+      this.domain.insertValueInDomain(value);
+    }
   }
   getDomain() {
     return this.domain;
   }
+  getRelatedVariables() {
+    return this.relatedVariables;
+  }
   getValue() {
     return this.value;
   }
+  getPosX() {
+    return this.posX;
+  }
+  getPosY() {
+    return this.posY;
+  }
   setValue(value) {
+    console.log(this.relatedVariables);
     this.value = value;
+    Array.from(this.relatedVariables).map((variable) => {
+      variable.removeValueFromDomain(value);
+    });
+  }
+  unsetValue() {
+    Array.from(this.relatedVariables).map((variable) => {
+      variable.insertValueInDomain(this.value);
+    });
+    this.value = null;
+  }
+  static fromJSON(jsonObject) {
+    return new Variable(jsonObject["posX"], jsonObject["posY"], domain_default.fromJSON(jsonObject["domain"]), jsonObject["value"]);
+  }
+  toJSON() {
+    return {
+      posX: this.posX,
+      posY: this.posX,
+      domain: this.domain.toJSON(),
+      value: this.value
+    };
+  }
+  moreThanOneRelatedVariableHasValue(value) {
+    return Array.from(this.relatedVariables).filter((variable) => variable.getValue() === value).length > 1;
   }
 }
 var variable_default = Variable;
@@ -233,7 +284,27 @@ var init = function(canvasId) {
   for (let j = 0;j < 9; j++) {
     cells.push([]);
     for (let i = 0;i < 9; i++) {
-      cells[j][i] = new variable_default(new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+      cells[j][i] = new variable_default(i, j, new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+    }
+  }
+  for (let i = 0;i < 9; i++) {
+    for (let j = 0;j < 9; j++) {
+      let cell = cells[j][i];
+      for (let k = 0;k < 9; k++) {
+        cell.getRelatedVariables().add(cells[k][cell.getPosX()]);
+        cell.getRelatedVariables().add(cells[cell.getPosY()][k]);
+      }
+      const iGroup = Math.floor(i / 3);
+      const jGroup = Math.floor(j / 3);
+      for (let j2 = 0;j2 < 3; j2++) {
+        for (let i2 = 0;i2 < 3; i2++) {
+          const iCell = iGroup * 3 + i2;
+          const jCell = jGroup * 3 + j2;
+          if (iCell !== i && jCell !== j) {
+            cell.getRelatedVariables().add(cells[jCell][iCell]);
+          }
+        }
+      }
     }
   }
   return { canvas, ui: ui2, cells };
@@ -255,53 +326,16 @@ var start = function(initialState) {
       }
     }
   }
-  function removeValueFromCellDomain(i, j, v) {
-    cells[j][i].getDomain().removeValueFromDomain(v);
-  }
-  function addValueToCellDomain(i, j, v) {
-    cells[j][i].getDomain().insertValueInDomain(v);
-  }
-  function maintainImpactedCellsDomain(i, j, v, remove) {
-    const action = remove ? removeValueFromCellDomain : addValueToCellDomain;
-    for (let k = 0;k < 9; k++) {
-      if (k !== i) {
-        action(k, j, v);
-      }
-      if (k !== j) {
-        action(i, k, v);
-      }
-    }
-    const iGroup = Math.floor(i / 3);
-    const jGroup = Math.floor(j / 3);
-    for (let j2 = 0;j2 < 3; j2++) {
-      for (let i2 = 0;i2 < 3; i2++) {
-        const iCell = iGroup * 3 + i2;
-        const jCell = jGroup * 3 + j2;
-        if (iCell !== i && jCell !== j) {
-          action(iCell, jCell, v);
-        }
-      }
-    }
-  }
   function toggle(v) {
     const i = selectedCell[0];
     const j = selectedCell[1];
     if (cells[j][i].getValue() === null) {
-      if (cells[j][i].getDomain().contains(v)) {
+      if (cells[j][i].getDomain().hasValue(v)) {
         cells[j][i].setValue(v);
-        maintainImpactedCellsDomain(i, j, v, true);
         refreshGrid();
       }
     } else if (cells[j][i].getValue() === v) {
-      cells[j][i].setValue(null);
-      maintainImpactedCellsDomain(i, j, v, false);
-      for (let j2 = 0;j2 < 9; j2++) {
-        for (let i2 = 0;i2 < 9; i2++) {
-          if (cells[j2][i2].getValue() === v) {
-            maintainImpactedCellsDomain(i2, j2, v, true);
-          }
-        }
-      }
+      cells[j][i].unsetValue();
       refreshGrid();
     }
   }

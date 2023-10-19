@@ -4,7 +4,7 @@ type JSONObject = {[key: string]: JSON}
 type JSON = JSONPrimitives | JSONArray | JSONObject
 
 class Domain<T> {
-    private domain: Array<T>;
+    private readonly domain: Array<T>;
 
     public constructor(values: Array<T>) {
         this.domain = values
@@ -20,10 +20,6 @@ class Domain<T> {
         if (!this.domain.includes(value)) {
             this.domain.push(value);
         }
-    }
-
-    public getIndexOf(value: T) {
-        return this.domain.indexOf(value);
     }
 
     public hasValue(value: T): boolean {
