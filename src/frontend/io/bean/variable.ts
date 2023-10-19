@@ -6,7 +6,7 @@ class Variable<T> {
     private value: T | null;
     private readonly relatedVariables: Set<Variable<T>>;
 
-    public constructor(private posX: number, private posY: number, private domain: Domain<T>, value?: T) {
+    public constructor(private domain: Domain<T>, value?: T) {
         this.value = value ? value : null;
         this.relatedVariables = new Set<Variable<T>>();
     }
@@ -33,14 +33,6 @@ class Variable<T> {
         return this.value;
     }
 
-    public getPosX() {
-        return this.posX;
-    }
-
-    public getPosY() {
-        return this.posY;
-    }
-
     public setValue(value: T) {
         this.value = value;
 
@@ -59,8 +51,6 @@ class Variable<T> {
 
     public static fromJSON(jsonObject: JSONObject): Variable<any> {
         return new Variable(
-            jsonObject["posX"] as JSONPrimitives as number,
-            jsonObject["posY"] as JSONPrimitives as number,
             Domain.fromJSON(jsonObject["domain"] as JSONArray)!,
             jsonObject["value"]
         );
@@ -68,8 +58,6 @@ class Variable<T> {
 
     public toJSON(): JSONObject {
         return {
-            "posX": this.posX as JSONPrimitives,
-            "posY": this.posX as JSONPrimitives,
             "domain": this.domain.toJSON(),
             "value": this.value as JSONPrimitives
         };

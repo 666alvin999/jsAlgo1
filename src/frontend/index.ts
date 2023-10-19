@@ -31,17 +31,17 @@ function init(canvasId: string): InitialState | false {
         cells.push([]);
 
         for (let i = 0; i < 9; i++) {
-            cells[j][i] = new Variable<SudokuValues>(i, j, new Domain<SudokuValues>(new Set([1, 2, 3, 4, 5, 6, 7, 8, 9])));
+            cells[j][i] = new Variable<SudokuValues>(new Domain<SudokuValues>(new Set([1, 2, 3, 4, 5, 6, 7, 8, 9])));
         }
     }
 
-    for (let i = 0; i < 9; i++) {
-        for (let j = 0; j < 9; j++) {
+    for (let j = 0; j < 9; j++) {
+        for (let i = 0; i < 9; i++) {
             let cell: Variable<SudokuValues> = cells[j][i];
 
             for (let k = 0; k < 9; k++) {
-                cell.getRelatedVariables().add(cells[k][cell.getPosX()]);
-                cell.getRelatedVariables().add(cells[cell.getPosY()][k]);
+                cell.getRelatedVariables().add(cells[j][k]);
+                cell.getRelatedVariables().add(cells[k][i]);
             }
 
             const iGroup = Math.floor(i / 3);

@@ -174,23 +174,19 @@ class Domain {
     this.domain = values;
   }
   removeValueFromDomain(value) {
-    if (this.domain.includes(value)) {
-      this.domain.splice(this.domain.indexOf(value), 1);
-    }
+    this.domain.delete(value);
   }
   insertValueInDomain(value) {
-    if (!this.domain.includes(value)) {
-      this.domain.push(value);
-    }
+    this.domain.add(value);
   }
   hasValue(value) {
-    return this.domain.includes(value);
+    return this.domain.has(value);
   }
   copy() {
     return new Domain(this.domain);
   }
   toJSON() {
-    return this.domain;
+    return Array.from(this.domain);
   }
   static fromJSON(jsonDomain) {
     let validationOk = Array.isArray(jsonDomain);
@@ -202,7 +198,7 @@ class Domain {
       if (!validationOk) {
         throw new Error("At least one element does not have the same type as the other");
       }
-      return new Domain(jsonDomain);
+      return new Domain(new Set(jsonDomain));
     }
   }
 }
@@ -210,14 +206,10 @@ var domain_default = Domain;
 
 // src/frontend/io/bean/variable.ts
 class Variable {
-  posX;
-  posY;
   domain2;
   value;
   relatedVariables;
-  constructor(posX, posY, domain2, value) {
-    this.posX = posX;
-    this.posY = posY;
+  constructor(domain2, value) {
     this.domain = domain2;
     this.value = value ? value : null;
     this.relatedVariables = new Set;
@@ -239,12 +231,6 @@ class Variable {
   getValue() {
     return this.value;
   }
-  getPosX() {
-    return this.posX;
-  }
-  getPosY() {
-    return this.posY;
-  }
   setValue(value) {
     this.value = value;
     Array.from(this.relatedVariables).map((variable) => {
@@ -258,12 +244,10 @@ class Variable {
     this.value = null;
   }
   static fromJSON(jsonObject) {
-    return new Variable(jsonObject["posX"], jsonObject["posY"], domain_default.fromJSON(jsonObject["domain"]), jsonObject["value"]);
+    return new Variable(domain_default.fromJSON(jsonObject["domain"]), jsonObject["value"]);
   }
   toJSON() {
     return {
-      posX: this.posX,
-      posY: this.posX,
       domain: this.domain.toJSON(),
       value: this.value
     };
@@ -289,15 +273,15 @@ var init = function(canvasId) {
   for (let j = 0;j < 9; j++) {
     cells.push([]);
     for (let i = 0;i < 9; i++) {
-      cells[j][i] = new variable_default(i, j, new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+      cells[j][i] = new variable_default(new domain_default(new Set([1, 2, 3, 4, 5, 6, 7, 8, 9])));
     }
   }
-  for (let i = 0;i < 9; i++) {
-    for (let j = 0;j < 9; j++) {
+  for (let j = 0;j < 9; j++) {
+    for (let i = 0;i < 9; i++) {
       let cell = cells[j][i];
       for (let k = 0;k < 9; k++) {
-        cell.getRelatedVariables().add(cells[k][cell.getPosX()]);
-        cell.getRelatedVariables().add(cells[cell.getPosY()][k]);
+        cell.getRelatedVariables().add(cells[j][k]);
+        cell.getRelatedVariables().add(cells[k][i]);
       }
       const iGroup = Math.floor(i / 3);
       const jGroup = Math.floor(j / 3);
