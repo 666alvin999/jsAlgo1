@@ -193,10 +193,16 @@ class Domain {
     return this.domain;
   }
   static fromJSON(jsonDomain) {
-    if (typeof jsonDomain[0] === "number" || typeof jsonDomain[0] === "string" || typeof jsonDomain[0] === "boolean" || typeof jsonDomain[0] === null) {
+    let validationOk = Array.isArray(jsonDomain);
+    if (jsonDomain.length > 0) {
+      const type = typeof jsonDomain[0];
+      validationOk = jsonDomain.reduce((acc, element) => {
+        return acc && typeof element !== type;
+      }, true);
+      if (!validationOk) {
+        throw new Error("At least one element does not have the same type as the other");
+      }
       return new Domain(jsonDomain);
-    } else {
-      return new Domain([]);
     }
   }
 }

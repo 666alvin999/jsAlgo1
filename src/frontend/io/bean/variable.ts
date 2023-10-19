@@ -65,7 +65,7 @@ class Variable<T> {
         return new Variable(
             jsonObject["posX"] as JSONPrimitives as number,
             jsonObject["posY"] as JSONPrimitives as number,
-            Domain.fromJSON(jsonObject["domain"] as JSONArray),
+            Domain.fromJSON(jsonObject["domain"] as JSONArray)!,
             jsonObject["value"]
         );
     }

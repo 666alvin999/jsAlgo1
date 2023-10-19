@@ -1,8 +1,8 @@
 /// <reference lib="dom" />
 
-import {wsInit, SudokuUI, eventHandlersInit} from "./io"
-import Domain from "./io/bean/domain.ts";
-import Variable from "./io/bean/variable.ts";
+import {wsInit, SudokuUI, eventHandlersInit} from "./io";
+import Variable from "./io/bean/variable";
+import Domain from "./io/bean/domain";
 
 type SudokuValues = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
