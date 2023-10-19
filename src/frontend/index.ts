@@ -3,8 +3,7 @@
 import {wsInit, SudokuUI, eventHandlersInit} from "./io";
 import Variable from "./io/bean/variable";
 import Domain from "./io/bean/domain";
-
-type SudokuValues = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+import {SudokuValues} from "./Types.ts";
 
 type InitialState = {
     readonly canvas: HTMLCanvasElement,

@@ -246,7 +246,6 @@ class Variable {
     return this.posY;
   }
   setValue(value) {
-    console.log(this.relatedVariables);
     this.value = value;
     Array.from(this.relatedVariables).map((variable) => {
       variable.removeValueFromDomain(value);

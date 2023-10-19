@@ -1,7 +1,4 @@
-type JSONPrimitives = number | string | boolean | null
-type JSONArray = JSON[]
-type JSONObject = {[key: string]: JSON}
-type JSON = JSONPrimitives | JSONArray | JSONObject
+import {JSONArray, JSONPrimitives} from "../../Types.ts";
 
 class Domain<T> {
     private readonly domain: Array<T>;

@@ -1,9 +1,5 @@
 import Domain from "./domain";
-
-type JSONPrimitives = number | string | boolean | null;
-type JSONArray = JSON[];
-type JSONObject = { [key: string]: JSON };
-type JSON = JSONPrimitives | JSONArray | JSONObject;
+import {JSONArray, JSONObject, JSONPrimitives} from "../../Types.ts";
 
 class Variable<T> {
 
@@ -46,11 +42,11 @@ class Variable<T> {
     }
 
     public setValue(value: T) {
-        console.log(this.relatedVariables);
         this.value = value;
+
         Array.from(this.relatedVariables).map(variable => {
             variable.removeValueFromDomain(value);
-        })
+        });
     }
 
     public unsetValue() {
