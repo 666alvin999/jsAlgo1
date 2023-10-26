@@ -1,13 +1,18 @@
-import Domain from "./domain";
-import {JSONArray, JSONObject, JSONPrimitives} from "../../Types.ts";
+import Domain from "./domain.ts";
+import {JSONArray, JSONPrimitives} from "../Types.ts";
+
+export type JSONVariable = {
+    domain: JSONArray
+    value?: JSONPrimitives
+}
 
 class Variable<T> {
 
-    private value: T | null;
+    private value?: T;
     private readonly relatedVariables: Set<Variable<T>>;
 
     public constructor(private domain: Domain<T>, value?: T) {
-        this.value = value ? value : null;
+        this.value = value;
         this.relatedVariables = new Set<Variable<T>>();
     }
 
@@ -46,21 +51,30 @@ class Variable<T> {
             variable.insertValueInDomain(this.value!)
         });
 
-        this.value = null;
+        this.value = undefined;
     }
 
-    public static fromJSON(jsonObject: JSONObject): Variable<any> {
-        return new Variable(
-            Domain.fromJSON(jsonObject["domain"] as JSONArray)!,
-            jsonObject["value"]
-        );
+    public isSet(): boolean {
+        return typeof this.value !== "undefined"
     }
 
-    public toJSON(): JSONObject {
-        return {
-            "domain": this.domain.toJSON(),
-            "value": this.value as JSONPrimitives
-        };
+    toJSON(): JSONVariable {
+        const result: JSONVariable = {
+            domain: this.domain.toJSON() as JSONArray
+        }
+        if (this.isSet()) {
+            result.value = this.value as JSONPrimitives | undefined;
+        }
+        return result
+    }
+
+    static fromJSON<T extends JSONPrimitives>(json: JSONVariable): Variable<T> {
+        let validationOk = typeof json === "object" && "domain" in json
+        if (validationOk && Domain.validateJSON(json.domain)) {
+            const domain = new Domain(json.domain) as unknown as Domain<T>
+            return new Variable(domain)
+        }
+        throw new Error(`Unexpected JSONVariable object: ${JSON.stringify(json)}`)
     }
 
     private moreThanOneRelatedVariableHasValue(value: T) {

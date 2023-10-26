@@ -1,8 +1,8 @@
 /// <reference lib="dom" />
 
 import {wsInit, SudokuUI, eventHandlersInit} from "./io";
-import Variable from "./io/bean/variable";
-import Domain from "./io/bean/domain";
+import Variable from "./bean/variable";
+import Domain from "./bean/domain";
 import {SudokuValues} from "./Types.ts";
 
 type InitialState = {

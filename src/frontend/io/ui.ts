@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import Domain from "./bean/domain.ts";
+import Domain from "../bean/domain.ts";
 
 export class SudokuUI {
 	private static readonly _uis: WeakMap<HTMLCanvasElement, SudokuUI> = new WeakMap();
