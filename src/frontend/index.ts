@@ -69,7 +69,7 @@ function start(initialState: InitialState) {
     let selectedCell: [number, number] | null = null;
 
     function drawCellContent(i: number, j: number) {
-        if (cells[j][i].getValue() !== null) {
+        if (cells[j][i].getValue() !== undefined) {
             ui.drawCellValue(i, j, cells[j][i].getValue()!);
         } else {
             ui.drawCellDomain(i, j, cells[j][i].getDomain());
@@ -88,7 +88,7 @@ function start(initialState: InitialState) {
         const i = selectedCell![0];
         const j = selectedCell![1];
 
-        if (cells[j][i].getValue() === null) {
+        if (cells[j][i].getValue() === undefined) {
             if (cells[j][i].getDomain().hasValue(v)) {
                 cells[j][i].setValue(v);
                 refreshGrid();

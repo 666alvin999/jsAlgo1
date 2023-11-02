@@ -167,11 +167,11 @@ function wsInit() {
     }
   };
 }
-// src/frontend/io/bean/domain.ts
+// src/frontend/bean/domain.ts
 class Domain {
   domain;
   constructor(values) {
-    this.domain = values;
+    this.domain = new Set(values);
   }
   removeValueFromDomain(value) {
     this.domain.delete(value);
@@ -183,35 +183,42 @@ class Domain {
     return this.domain.has(value);
   }
   copy() {
-    return new Domain(this.domain);
+    return new Domain(Array.from(this.domain));
   }
   toJSON() {
-    return Array.from(this.domain);
-  }
-  static fromJSON(jsonDomain) {
-    let validationOk = Array.isArray(jsonDomain);
-    if (jsonDomain.length > 0) {
-      const type = typeof jsonDomain[0];
-      validationOk = jsonDomain.reduce((acc, element) => {
-        return acc && typeof element !== type;
-      }, true);
-      if (!validationOk) {
-        throw new Error("At least one element does not have the same type as the other");
-      }
-      return new Domain(new Set(jsonDomain));
+    const result = [];
+    for (const v of this.domain) {
+      result.push(v);
     }
+    return result;
+  }
+  static validateJSON(json) {
+    if (Array.isArray(json) && json.length > 0) {
+      const type = typeof json[0];
+      const validationOk = json.reduce((acc, element) => acc && typeof element !== type, true);
+      if (!validationOk) {
+        return false;
+      }
+    }
+    return true;
+  }
+  static fromJSON(json) {
+    if (Domain.validateJSON(json)) {
+      return new Domain(json);
+    }
+    throw new Error(`At least one element do not have the same type as the other`);
   }
 }
 var domain_default = Domain;
 
-// src/frontend/io/bean/variable.ts
+// src/frontend/bean/variable.ts
 class Variable {
   domain2;
   value;
   relatedVariables;
   constructor(domain2, value) {
     this.domain = domain2;
-    this.value = value ? value : null;
+    this.value = value;
     this.relatedVariables = new Set;
   }
   removeValueFromDomain(value) {
@@ -241,16 +248,27 @@ class Variable {
     Array.from(this.relatedVariables).map((variable) => {
       variable.insertValueInDomain(this.value);
     });
-    this.value = null;
+    this.value = undefined;
   }
-  static fromJSON(jsonObject) {
-    return new Variable(domain_default.fromJSON(jsonObject["domain"]), jsonObject["value"]);
+  isSet() {
+    return typeof this.value !== "undefined";
   }
   toJSON() {
-    return {
-      domain: this.domain.toJSON(),
-      value: this.value
+    const result = {
+      domain: this.domain.toJSON()
     };
+    if (this.isSet()) {
+      result.value = this.value;
+    }
+    return result;
+  }
+  static fromJSON(json) {
+    let validationOk = typeof json === "object" && ("domain" in json);
+    if (validationOk && domain_default.validateJSON(json.domain)) {
+      const domain2 = new domain_default(json.domain);
+      return new Variable(domain2);
+    }
+    throw new Error(`Unexpected JSONVariable object: ${JSON.stringify(json)}`);
   }
   moreThanOneRelatedVariableHasValue(value) {
     return Array.from(this.relatedVariables).filter((variable) => variable.getValue() === value).length > 1;
@@ -273,7 +291,7 @@ var init = function(canvasId) {
   for (let j = 0;j < 9; j++) {
     cells.push([]);
     for (let i = 0;i < 9; i++) {
-      cells[j][i] = new variable_default(new domain_default(new Set([1, 2, 3, 4, 5, 6, 7, 8, 9])));
+      cells[j][i] = new variable_default(new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
     }
   }
   for (let j = 0;j < 9; j++) {
@@ -302,7 +320,7 @@ var start = function(initialState) {
   const { canvas, ui: ui2, cells } = initialState;
   let selectedCell = null;
   function drawCellContent(i, j) {
-    if (cells[j][i].getValue() !== null) {
+    if (cells[j][i].getValue() !== undefined) {
       ui2.drawCellValue(i, j, cells[j][i].getValue());
     } else {
       ui2.drawCellDomain(i, j, cells[j][i].getDomain());
@@ -318,7 +336,7 @@ var start = function(initialState) {
   function toggle(v) {
     const i = selectedCell[0];
     const j = selectedCell[1];
-    if (cells[j][i].getValue() === null) {
+    if (cells[j][i].getValue() === undefined) {
       if (cells[j][i].getDomain().hasValue(v)) {
         cells[j][i].setValue(v);
         refreshGrid();
