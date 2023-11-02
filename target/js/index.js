@@ -167,7 +167,7 @@ function wsInit() {
     }
   };
 }
-// src/frontend/bean/domain.ts
+// src/frontend/bean/Domain.ts
 class Domain {
   domain;
   constructor(values) {
@@ -181,6 +181,9 @@ class Domain {
   }
   hasValue(value) {
     return this.domain.has(value);
+  }
+  getDomain() {
+    return this.domain;
   }
   copy() {
     return new Domain(Array.from(this.domain));
@@ -209,15 +212,15 @@ class Domain {
     throw new Error(`At least one element do not have the same type as the other`);
   }
 }
-var domain_default = Domain;
+var Domain_default = Domain;
 
-// src/frontend/bean/variable.ts
+// src/frontend/bean/Variable.ts
 class Variable {
-  domain2;
+  domain;
   value;
   relatedVariables;
-  constructor(domain2, value) {
-    this.domain = domain2;
+  constructor(domain, value) {
+    this.domain = domain;
     this.value = value;
     this.relatedVariables = new Set;
   }
@@ -225,9 +228,7 @@ class Variable {
     this.domain.removeValueFromDomain(value);
   }
   insertValueInDomain(value) {
-    if (!this.moreThanOneRelatedVariableHasValue(value)) {
-      this.domain.insertValueInDomain(value);
-    }
+    this.domain.insertValueInDomain(value);
   }
   getDomain() {
     return this.domain;
@@ -240,14 +241,8 @@ class Variable {
   }
   setValue(value) {
     this.value = value;
-    Array.from(this.relatedVariables).map((variable) => {
-      variable.removeValueFromDomain(value);
-    });
   }
   unsetValue() {
-    Array.from(this.relatedVariables).map((variable) => {
-      variable.insertValueInDomain(this.value);
-    });
     this.value = undefined;
   }
   isSet() {
@@ -264,17 +259,14 @@ class Variable {
   }
   static fromJSON(json) {
     let validationOk = typeof json === "object" && ("domain" in json);
-    if (validationOk && domain_default.validateJSON(json.domain)) {
-      const domain2 = new domain_default(json.domain);
-      return new Variable(domain2);
+    if (validationOk && Domain_default.validateJSON(json.domain)) {
+      const domain = new Domain_default(json.domain);
+      return new Variable(domain);
     }
     throw new Error(`Unexpected JSONVariable object: ${JSON.stringify(json)}`);
   }
-  moreThanOneRelatedVariableHasValue(value) {
-    return Array.from(this.relatedVariables).filter((variable) => variable.getValue() === value).length > 1;
-  }
 }
-var variable_default = Variable;
+var Variable_default = Variable;
 
 // src/frontend/index.ts
 var init = function(canvasId) {
@@ -291,7 +283,7 @@ var init = function(canvasId) {
   for (let j = 0;j < 9; j++) {
     cells.push([]);
     for (let i = 0;i < 9; i++) {
-      cells[j][i] = new variable_default(new domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+      cells[j][i] = new Variable_default(new Domain_default([1, 2, 3, 4, 5, 6, 7, 8, 9]));
     }
   }
   for (let j = 0;j < 9; j++) {
@@ -339,10 +331,18 @@ var start = function(initialState) {
     if (cells[j][i].getValue() === undefined) {
       if (cells[j][i].getDomain().hasValue(v)) {
         cells[j][i].setValue(v);
+        for (let cell of cells[j][i].getRelatedVariables()) {
+          cell.getDomain().removeValueFromDomain(v);
+        }
         refreshGrid();
       }
     } else if (cells[j][i].getValue() === v) {
       cells[j][i].unsetValue();
+      for (let cell of cells[j][i].getRelatedVariables()) {
+        if (!(Array.from(cell.getRelatedVariables()).filter((cell2) => cell2.getValue() === v).length > 0)) {
+          cell.getDomain().insertValueInDomain(v);
+        }
+      }
       refreshGrid();
     }
   }

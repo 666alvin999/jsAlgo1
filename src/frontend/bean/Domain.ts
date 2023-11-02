@@ -19,6 +19,10 @@ class Domain<T> {
         return this.domain.has(value);
     }
 
+    public getDomain() {
+        return this.domain;
+    }
+
     public copy(): Domain<T> {
         return new Domain(Array.from(this.domain));
     }

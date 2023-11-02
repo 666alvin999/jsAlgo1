@@ -1,8 +1,7 @@
 /// <reference lib="dom" />
 
 import {wsInit, SudokuUI, eventHandlersInit} from "./io";
-import Variable from "./bean/variable";
-import Domain from "./bean/domain";
+import {Variable, Domain} from "./bean";
 import {SudokuValues} from "./Types.ts";
 
 type InitialState = {
@@ -31,7 +30,9 @@ function init(canvasId: string): InitialState | false {
         cells.push([]);
 
         for (let i = 0; i < 9; i++) {
-            cells[j][i] = new Variable<SudokuValues>(new Domain<SudokuValues>([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+            cells[j][i] = new Variable<SudokuValues>(
+                new Domain<SudokuValues>([1, 2, 3, 4, 5, 6, 7, 8, 9])
+            );
         }
     }
 
@@ -91,10 +92,22 @@ function start(initialState: InitialState) {
         if (cells[j][i].getValue() === undefined) {
             if (cells[j][i].getDomain().hasValue(v)) {
                 cells[j][i].setValue(v);
+
+                for (let cell of cells[j][i].getRelatedVariables()) {
+                    cell.getDomain().removeValueFromDomain(v);
+                }
+
                 refreshGrid();
             }
         } else if (cells[j][i].getValue() === v) {
             cells[j][i].unsetValue();
+
+            for (let cell of cells[j][i].getRelatedVariables()) {
+                if (!(Array.from(cell.getRelatedVariables()).filter(cell2 => cell2.getValue() === v).length > 0)) {
+                    cell.getDomain().insertValueInDomain(v);
+                }
+            }
+
             refreshGrid();
         }
     }
@@ -123,3 +136,4 @@ const retInit = init("sudokuCanvas");
 if (retInit) {
     start(retInit);
 }
+

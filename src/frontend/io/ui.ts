@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
-import Domain from "../bean/domain.ts";
+import {Domain} from "../bean";
+import {SudokuValues} from "../Types.ts";
 
 export class SudokuUI {
 	private static readonly _uis: WeakMap<HTMLCanvasElement, SudokuUI> = new WeakMap();
@@ -116,7 +117,7 @@ export class SudokuUI {
 		return this;
 	}
 
-	public drawCellDomain(i: number, j: number, domain: Domain<number>): SudokuUI {
+	public drawCellDomain(i: number, j: number, domain: Domain<SudokuValues>): SudokuUI {
 		this._ctx.fillStyle = "#000";
 		this._ctx.font = "16px Arial";
 		this._ctx.textBaseline = "top";
@@ -129,7 +130,7 @@ export class SudokuUI {
 		const y = j * this._cellSize + cellPadding;
 
 		for (let k = 1; k <= 9; k++) {
-			const vk = domain.hasValue(k) ? k : null;
+			const vk = domain.hasValue(k as SudokuValues) ? k : null;
 			const vi = (k - 1) % 3;
 			const vj = Math.floor((k - 1) / 3);
 			const vx = x + valueStep * vi;
